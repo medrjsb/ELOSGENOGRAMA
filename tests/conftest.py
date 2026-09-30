@@ -4,6 +4,7 @@ ELOS — Fixtures compartilhadas dos testes.
 Reconstruído a partir do uso em test_rbac.py (o conftest original não foi versionado).
 Os atores de equipe usam o mesmo município dos testes territoriais (PE260000).
 """
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
@@ -34,3 +35,11 @@ def actor_pesquisa() -> RBACContext:
 @pytest.fixture
 def actor_admin() -> RBACContext:
     return _actor(Papel.ADMIN, municipio_id=None)
+
+
+@pytest.fixture
+def audit_mock() -> AsyncMock:
+    """Audit logger falso; `registrar` é async como o real."""
+    audit = AsyncMock()
+    audit.registrar = AsyncMock(return_value=None)
+    return audit
