@@ -1,0 +1,3637 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ELOS v19 — Construtor por Voz + Fichas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#060c18; --bg2:#0b1325; --bg3:#0f1c35;
+      --border:#1a2d4e; --border2:#233d65;
+      --teal:#06d6a0; --teal2:#04b886;
+      --blue:#4a9eff; --purp:#c084fc;
+      --red:#f87171; --orange:#fb923c;
+      --green:#4ade80; --yellow:#fbbf24;
+      --text:#ddeaf8; --text2:#b0c8e8;
+      --dim:#6a8aac; --dim2:#4a6688;
+    }
+    html, body { width:100%; height:100%; background:var(--bg); color:var(--text);
+      font-family:'Inter',system-ui,sans-serif; font-size:14px; overflow:hidden; }
+
+    /* ── LOADING ─────────────────────────────── */
+    #loading { position:fixed; inset:0; background:var(--bg); z-index:1000;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:18px; transition:opacity .5s; }
+    #loading.out { opacity:0; pointer-events:none; }
+    .ld-brand { font-family:'Space Grotesk',sans-serif; font-size:52px; font-weight:700;
+      color:var(--teal); letter-spacing:.08em; }
+    .ld-sub { font-size:13px; color:var(--dim); letter-spacing:.04em; }
+    .ld-bar { width:200px; height:2px; background:var(--border); border-radius:1px; overflow:hidden; }
+    .ld-fill { height:100%; background:var(--teal); width:0; animation:ldfill 1.8s cubic-bezier(.4,0,.2,1) forwards; }
+    @keyframes ldfill { to { width:100%; } }
+
+    /* ── WELCOME ─────────────────────────────── */
+    #welcome { position:fixed; inset:0; background:rgba(6,12,24,.88);
+      backdrop-filter:blur(10px); z-index:200;
+      display:flex; align-items:center; justify-content:center; }
+    #welcome.gone { display:none; }
+    .wc-inner { text-align:center; padding:56px 48px;
+      background:rgba(11,19,37,.95); border:1px solid var(--border2);
+      border-radius:18px; max-width:500px; width:92%; box-shadow:0 32px 80px rgba(0,0,0,.6); }
+    .wc-brand { font-family:'Space Grotesk',sans-serif; font-size:48px; font-weight:700;
+      color:var(--teal); letter-spacing:.1em; margin-bottom:18px; }
+    .wc-inner h1 { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:600;
+      color:var(--text); margin-bottom:12px; }
+    .wc-inner p { font-size:14px; color:var(--dim); line-height:1.7; margin-bottom:36px; }
+    .wc-btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+    .wc-btns button { padding:13px 32px; border-radius:9px;
+      font-family:'Inter',sans-serif; font-size:14px; font-weight:500; cursor:pointer; transition:all .2s; }
+    .wc-btns .btn-primary { background:var(--teal); border:none; color:#060c18; }
+    .wc-btns .btn-primary:hover { background:var(--teal2); }
+    .wc-btns .btn-sec { background:transparent; border:1px solid var(--border2); color:var(--dim); }
+    .wc-btns .btn-sec:hover { border-color:var(--text2); color:var(--text); }
+    .wc-btns .btn-build { background:rgba(74,158,255,.14); border:1px solid var(--blue); color:var(--blue); }
+    .wc-btns .btn-build:hover { background:rgba(74,158,255,.28); }
+
+    /* ── BOND MODAL ──────────────────────────── */
+    #bond-modal .modal-box { max-width:420px; }
+    .bond-pair { display:flex; gap:8px; align-items:center; }
+    .bond-pair select { flex:1; }
+    .bond-pair span { color:var(--dim); font-size:12px; white-space:nowrap; }
+
+    /* ── NEW GENOGRAM BANNER ─────────────────── */
+    #new-gen-banner { position:fixed; top:52px; left:50%; transform:translateX(-50%);
+      background:rgba(6,214,160,.12); border:1px solid var(--teal); border-top:none;
+      border-radius:0 0 10px 10px; padding:5px 18px; font-size:11px; color:var(--teal);
+      z-index:80; display:none; gap:10px; align-items:center; }
+    #new-gen-banner.on { display:flex; }
+    #new-gen-banner button { background:none; border:none; color:var(--teal);
+      font-size:11px; cursor:pointer; text-decoration:underline; }
+
+    /* ── BUILDER TOPBAR BTN ──────────────────── */
+    .build-btn { background:rgba(251,191,36,.12); border:1px solid var(--yellow);
+      color:var(--yellow); padding:5px 11px; border-radius:6px;
+      font-size:12px; cursor:pointer; transition:all .2s; white-space:nowrap; }
+    .build-btn:hover { background:rgba(251,191,36,.25); }
+
+    /* ── VOICE PANEL ──────────────────────────── */
+    .voice-btn { background:rgba(248,113,113,.13); border:1px solid var(--red);
+      color:var(--red); padding:5px 13px; border-radius:6px;
+      font-size:12px; cursor:pointer; transition:all .2s; white-space:nowrap; display:flex; align-items:center; gap:5px; }
+    .voice-btn.rec { background:rgba(248,113,113,.35); animation:pulse-rec 1.2s infinite; }
+    @keyframes pulse-rec { 0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.5)} 50%{box-shadow:0 0 0 6px rgba(248,113,113,0)} }
+    #voice-panel { position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
+      width:min(700px,90vw); background:rgba(11,19,37,.97); border:1px solid var(--border2);
+      border-radius:14px; padding:20px 24px; z-index:150; display:none; flex-direction:column; gap:12px;
+      box-shadow:0 24px 60px rgba(0,0,0,.7); backdrop-filter:blur(16px); }
+    #voice-panel.on { display:flex; }
+    .vp-hdr { display:flex; align-items:center; gap:10px; }
+    .vp-dot { width:10px; height:10px; border-radius:50%; background:var(--red); flex-shrink:0; }
+    .vp-dot.idle { background:var(--dim); animation:none; }
+    .vp-dot.rec  { animation:pulse-dot 1s infinite; }
+    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .vp-title { font-family:'Space Grotesk',sans-serif; font-weight:600; color:var(--text); }
+    .vp-hint  { font-size:11px; color:var(--dim); line-height:1.5; }
+    .vp-transcript { min-height:72px; max-height:160px; overflow-y:auto;
+      background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:8px;
+      padding:10px 12px; font-size:13px; color:var(--text2); line-height:1.6;
+      white-space:pre-wrap; font-style:italic; }
+    .vp-transcript .interim { color:var(--dim); }
+    .vp-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .vp-btn { padding:8px 18px; border-radius:7px; font-size:13px; font-weight:500; cursor:pointer; transition:all .2s; border:none; }
+    .vp-btn.start { background:var(--red); color:#fff; }
+    .vp-btn.stop  { background:var(--teal); color:#060c18; }
+    .vp-btn.build { background:var(--blue); color:#fff; }
+    .vp-btn.cancel { background:transparent; border:1px solid var(--border2); color:var(--dim); }
+    .vp-preview { display:none; flex-direction:column; gap:6px; }
+    .vp-preview.on { display:flex; }
+    .vp-preview-title { font-size:12px; color:var(--teal); font-weight:600; }
+    .vp-preview-list { display:flex; flex-wrap:wrap; gap:6px; }
+    .vp-chip { background:rgba(74,158,255,.12); border:1px solid rgba(74,158,255,.3);
+      color:var(--blue); border-radius:20px; padding:3px 10px; font-size:11px; }
+
+    /* ── CONTEXT MENU ─────────────────────────── */
+    #ctx-menu { position:fixed; background:rgba(11,19,37,.98); border:1px solid var(--border2);
+      border-radius:9px; padding:5px 0; z-index:500; display:none; min-width:180px;
+      box-shadow:0 12px 32px rgba(0,0,0,.6); backdrop-filter:blur(14px); }
+    #ctx-menu.on { display:block; }
+    .ctx-item { padding:8px 16px; font-size:12px; color:var(--text2); cursor:pointer;
+      transition:background .15s; display:flex; align-items:center; gap:8px; }
+    .ctx-item:hover { background:rgba(255,255,255,.06); color:var(--text); }
+    .ctx-item.danger { color:var(--red); }
+    .ctx-item.danger:hover { background:rgba(248,113,113,.08); }
+    .ctx-sep { height:1px; background:var(--border); margin:4px 8px; }
+    .ctx-name { padding:8px 16px; font-size:11px; color:var(--dim); font-style:italic; }
+
+    /* ── PERSON DETAIL MODAL ──────────────────── */
+    #person-detail { position:fixed; inset:0; background:rgba(6,12,24,.7);
+      backdrop-filter:blur(8px); z-index:400; display:none; align-items:center; justify-content:center; }
+    #person-detail.on { display:flex; }
+    .pd-box { background:rgba(11,19,37,.98); border:1px solid var(--border2);
+      border-radius:16px; width:min(680px,95vw); max-height:90vh; overflow:hidden;
+      display:flex; flex-direction:column; box-shadow:0 32px 80px rgba(0,0,0,.7); }
+    .pd-hdr { padding:18px 24px 14px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:12px; }
+    .pd-icon { width:36px; height:36px; border-radius:8px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; font-size:18px; }
+    .pd-hdr-info { flex:1; }
+    .pd-hdr-name { font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:600; color:var(--text); }
+    .pd-hdr-role { font-size:11px; color:var(--dim); margin-top:2px; }
+    .pd-close { background:none; border:none; color:var(--dim); font-size:20px; cursor:pointer; padding:4px 8px; border-radius:5px; }
+    .pd-close:hover { color:var(--text); background:rgba(255,255,255,.06); }
+    .pd-body { flex:1; overflow-y:auto; padding:20px 24px; display:flex; flex-direction:column; gap:18px; }
+    .pd-section { display:flex; flex-direction:column; gap:10px; }
+    .pd-section-title { font-size:10px; font-weight:600; letter-spacing:.08em;
+      color:var(--teal); text-transform:uppercase; padding-bottom:4px;
+      border-bottom:1px solid rgba(6,214,160,.15); }
+    .pd-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .pd-grid.tri { grid-template-columns:1fr 1fr 1fr; }
+    .pd-field { display:flex; flex-direction:column; gap:4px; }
+    .pd-field label { font-size:10px; color:var(--dim); letter-spacing:.03em; }
+    .pd-field input,.pd-field select,.pd-field textarea {
+      background:rgba(255,255,255,.05); border:1px solid var(--border);
+      color:var(--text); padding:7px 10px; border-radius:6px;
+      font-family:'Inter',sans-serif; font-size:12px; outline:none; width:100%; }
+    .pd-field input:focus,.pd-field select:focus,.pd-field textarea:focus { border-color:var(--blue); }
+    .pd-field textarea { resize:vertical; min-height:60px; }
+    .pd-field input[type=checkbox] { width:auto; }
+    .pd-footer { padding:14px 24px; border-top:1px solid var(--border);
+      display:flex; justify-content:flex-end; gap:10px; }
+    .pd-save { background:var(--teal); border:none; color:#060c18; padding:9px 22px;
+      border-radius:7px; font-size:13px; font-weight:600; cursor:pointer; }
+    .pd-save:hover { background:var(--teal2); }
+    .pd-cancel { background:transparent; border:1px solid var(--border2); color:var(--dim);
+      padding:9px 18px; border-radius:7px; font-size:13px; cursor:pointer; }
+    @media (max-width:500px) { .pd-grid,.pd-grid.tri { grid-template-columns:1fr; } }
+
+    /* ── TOPBAR ──────────────────────────────── */
+    .topbar { position:fixed; top:0; left:0; right:0; height:52px;
+      background:rgba(11,19,37,.95); backdrop-filter:blur(14px);
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:5px; padding:0 14px; z-index:100; }
+    .tb-brand { font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:700;
+      color:var(--teal); letter-spacing:.06em; margin-right:8px; white-space:nowrap; }
+    .layer-btn { background:transparent; border:1px solid var(--border); color:var(--dim);
+      padding:5px 11px; border-radius:6px; font-family:'Inter',sans-serif;
+      font-size:12px; cursor:pointer; transition:all .2s; white-space:nowrap; }
+    .layer-btn:hover { border-color:var(--teal); color:var(--text2); }
+    .layer-btn.active { background:rgba(6,214,160,.12); border-color:var(--teal); color:var(--teal); }
+    .tb-sep { width:1px; height:24px; background:var(--border); margin:0 3px; flex-shrink:0; }
+    .depth-wrap { display:flex; align-items:center; gap:3px; font-size:11px;
+      color:var(--dim); white-space:nowrap; }
+    .depth-btn { background:transparent; border:1px solid var(--border);
+      color:var(--dim); padding:3px 8px; border-radius:4px;
+      font-size:11px; cursor:pointer; transition:all .2s; }
+    .depth-btn:hover { border-color:var(--blue); color:var(--text2); }
+    .depth-btn.active { background:rgba(74,158,255,.15); border-color:var(--blue); color:var(--blue); }
+    .tb-spacer { flex:1; }
+    .add-btn { background:rgba(6,214,160,.14); border:1px solid var(--teal);
+      color:var(--teal); padding:6px 13px; border-radius:6px;
+      font-family:'Inter',sans-serif; font-size:12px; font-weight:500;
+      cursor:pointer; transition:all .2s; white-space:nowrap; }
+    .add-btn:hover { background:rgba(6,214,160,.25); }
+    .tb-search { background:rgba(255,255,255,.05); border:1px solid var(--border);
+      color:var(--text); padding:5px 10px; border-radius:6px;
+      font-size:12px; width:130px; outline:none; font-family:'Inter',sans-serif; }
+    .tb-search:focus { border-color:var(--blue); }
+    .tb-search::placeholder { color:var(--dim2); }
+    .auth-btn { background:rgba(74,158,255,.1); border:1px solid var(--blue);
+      color:var(--blue); padding:5px 11px; border-radius:6px;
+      font-size:12px; cursor:pointer; transition:all .2s; white-space:nowrap; }
+    .auth-btn:hover { background:rgba(74,158,255,.2); }
+
+    /* ── CANVAS ──────────────────────────────── */
+    #cv { position:fixed; top:52px; left:0; right:0; bottom:0; }
+    #cv canvas { display:block; }
+
+    /* ── NODE LABELS ─────────────────────────── */
+    .nd-label { position:fixed; font-family:'Inter',sans-serif;
+      font-size:10px; font-weight:500; color:var(--dim);
+      pointer-events:none; z-index:10; transform:translate(-50%,4px);
+      white-space:nowrap; text-shadow:0 1px 3px rgba(6,12,24,.9); transition:color .2s; }
+    .nd-label.focus { color:var(--teal); font-weight:600; }
+    .nd-label.highlight { color:var(--text); font-weight:700; }
+    .nd-role { display:block; font-size:8px; font-weight:400; color:var(--text-muted); margin-top:1px; opacity:.75; }
+
+    /* ── TOOLTIP ─────────────────────────────── */
+    #tooltip { position:fixed; background:rgba(11,19,37,.97);
+      border:1px solid var(--border2); border-radius:7px; padding:7px 11px;
+      font-size:11px; color:var(--text2); pointer-events:none; z-index:500;
+      display:none; white-space:nowrap; box-shadow:0 8px 24px rgba(0,0,0,.5); }
+    #tooltip.on { display:block; }
+
+    /* ── INFO PANEL (right) ──────────────────── */
+    #info { position:fixed; top:60px; right:-320px; width:300px;
+      background:rgba(11,19,37,.97); border:1px solid var(--border);
+      border-radius:12px 0 0 12px; z-index:90; backdrop-filter:blur(14px);
+      max-height:calc(100vh - 70px); overflow-y:auto;
+      transition:right .3s cubic-bezier(.4,0,.2,1); }
+    #info.open { right:0; }
+    .info-close { position:absolute; top:12px; right:12px;
+      background:none; border:none; color:var(--dim);
+      font-size:16px; cursor:pointer; padding:4px; line-height:1; }
+    .info-close:hover { color:var(--text); }
+    .info-head { padding:20px 20px 0; }
+    .info-avatar { width:46px; height:46px; border-radius:50%;
+      background:rgba(6,214,160,.2); border:2px solid var(--teal);
+      display:flex; align-items:center; justify-content:center;
+      font-size:19px; margin-bottom:10px; }
+    .info-name { font-family:'Space Grotesk',sans-serif;
+      font-size:17px; font-weight:600; color:var(--text); margin-bottom:3px; }
+    .info-role { font-size:11px; color:var(--dim); margin-bottom:12px; }
+    .info-badges { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:14px; }
+    .badge { font-size:10px; padding:3px 8px; border-radius:20px; font-weight:500; }
+    .badge-gen { background:rgba(74,158,255,.14); color:var(--blue); border:1px solid rgba(74,158,255,.28); }
+    .badge-age { background:rgba(6,214,160,.1); color:var(--teal); border:1px solid rgba(6,214,160,.24); }
+    .badge-dec { background:rgba(248,113,113,.13); color:var(--red); border:1px solid rgba(248,113,113,.28); }
+    .badge-foco { background:rgba(6,214,160,.18); color:var(--teal); border:1px solid rgba(6,214,160,.4); }
+
+    /* Accordion sections in info panel */
+    .acc-sec { border-top:1px solid var(--border); }
+    .acc-hdr { display:flex; justify-content:space-between; align-items:center;
+      padding:11px 20px; cursor:pointer; user-select:none;
+      font-size:10px; color:var(--dim2); text-transform:uppercase;
+      letter-spacing:.1em; font-weight:500; transition:color .2s; }
+    .acc-hdr:hover { color:var(--text2); }
+    .acc-hdr .acc-arr { font-size:9px; transition:transform .2s; }
+    .acc-sec.open .acc-arr { transform:rotate(180deg); }
+    .acc-body { padding:0 20px 14px; display:none; }
+    .acc-sec.open .acc-body { display:block; }
+
+    .bowen-score { font-family:'Space Grotesk',sans-serif;
+      font-size:36px; font-weight:700; color:var(--purp); line-height:1; margin-bottom:4px; }
+    .bowen-lbl { font-size:11px; color:var(--dim); }
+    .alerts { display:flex; flex-direction:column; gap:6px; }
+    .alert-item { display:flex; align-items:flex-start; gap:7px;
+      padding:8px 10px; background:rgba(248,113,113,.07);
+      border:1px solid rgba(248,113,113,.2); border-radius:7px;
+      font-size:11px; color:var(--red); line-height:1.4; }
+    .info-actions { display:flex; flex-direction:column; gap:5px; }
+    .ia-btn { background:rgba(255,255,255,.04); border:1px solid var(--border);
+      color:var(--text2); padding:8px 11px; border-radius:6px;
+      font-size:12px; cursor:pointer; transition:all .2s; text-align:left; }
+    .ia-btn:hover { background:rgba(6,214,160,.08); border-color:var(--teal); color:var(--teal); }
+
+    /* Evolução clínica */
+    .ev-list { display:flex; flex-direction:column; gap:9px; }
+    .ev-entry { background:rgba(255,255,255,.03); border:1px solid var(--border);
+      border-radius:8px; padding:10px 12px; }
+    .ev-meta { display:flex; justify-content:space-between; align-items:center;
+      margin-bottom:6px; }
+    .ev-date { font-size:10px; color:var(--blue); font-weight:500;
+      font-variant-numeric:tabular-nums; }
+    .ev-author { font-size:10px; color:var(--dim2); }
+    .ev-text { font-size:11px; color:var(--text2); line-height:1.55; }
+    .ev-add { margin-top:10px; width:100%; padding:7px; border-radius:6px;
+      background:rgba(6,214,160,.08); border:1px solid var(--teal);
+      color:var(--teal); font-size:11px; cursor:pointer; transition:all .2s; }
+    .ev-add:hover { background:rgba(6,214,160,.16); }
+    #ev-form { margin-top:8px; display:none; }
+    #ev-form.open { display:block; }
+    #ev-input { width:100%; background:rgba(255,255,255,.05);
+      border:1px solid var(--border); color:var(--text);
+      padding:8px; border-radius:6px; font-size:11px; resize:vertical;
+      min-height:72px; font-family:'Inter',sans-serif; outline:none; }
+    #ev-input:focus { border-color:var(--blue); }
+    .ev-actions { display:flex; gap:7px; margin-top:7px; }
+    .ev-save { flex:1; padding:6px; border-radius:5px;
+      background:var(--teal); border:none; color:#060c18; font-size:11px; cursor:pointer; }
+    .ev-cancel { padding:6px 12px; border-radius:5px;
+      background:transparent; border:1px solid var(--border); color:var(--dim);
+      font-size:11px; cursor:pointer; }
+
+    /* ── BOTTOM-LEFT CARD ────────────────────── */
+    /* bottom:90px = acima da timeline (74px) com folga; ajuste JS ao toggle */
+    #bl-card { position:fixed; bottom:90px; left:18px; z-index:85;
+      transition:bottom .3s cubic-bezier(.4,0,.2,1);
+      background:rgba(11,19,37,.96); border:1px solid var(--border);
+      border-radius:11px; width:210px; backdrop-filter:blur(14px);
+      overflow:hidden; }
+    .blc-hdr { display:flex; justify-content:space-between; align-items:center;
+      padding:10px 13px; cursor:pointer; user-select:none; }
+    .blc-title { font-family:'Space Grotesk',sans-serif;
+      font-size:12px; font-weight:600; color:var(--teal); letter-spacing:.04em; }
+    .blc-arr { font-size:9px; color:var(--dim2); transition:transform .2s; }
+    #bl-card.collapsed .blc-arr { transform:rotate(180deg); }
+    .blc-body { border-top:1px solid var(--border); }
+    #bl-card.collapsed .blc-body { display:none; }
+
+    /* Stats tab */
+    .blc-stats { padding:10px 13px; display:flex; flex-direction:column; gap:6px; }
+    .blc-stat { display:flex; justify-content:space-between; align-items:center;
+      font-size:11px; }
+    .blc-stat-lbl { color:var(--dim); }
+    .blc-stat-val { color:var(--text); font-weight:500; font-variant-numeric:tabular-nums; }
+    .blc-focus { padding:8px 13px 4px; border-top:1px solid var(--border);
+      display:flex; align-items:center; gap:8px; }
+    .blc-focus-icon { font-size:16px; }
+    .blc-focus-name { font-size:12px; font-weight:600; color:var(--teal); }
+    .blc-focus-role { font-size:10px; color:var(--dim); }
+
+    /* Simbologia section (inside bl-card) */
+    .blc-symb { border-top:1px solid var(--border); }
+    .blc-symb-hdr { display:flex; justify-content:space-between; align-items:center;
+      padding:8px 13px; cursor:pointer; user-select:none;
+      font-size:10px; color:var(--dim2); text-transform:uppercase; letter-spacing:.08em; }
+    .blc-symb-arr { font-size:9px; transition:transform .2s; }
+    .blc-symb.open .blc-symb-arr { transform:rotate(180deg); }
+    .blc-symb-body { padding:4px 13px 10px; display:none; }
+    .blc-symb.open .blc-symb-body { display:block; }
+    .symb-row { display:flex; align-items:center; gap:7px;
+      font-size:10px; color:var(--dim); padding:2px 0; }
+    .si { width:14px; text-align:center; font-size:12px; flex-shrink:0; }
+    .symb-div { border:none; border-top:1px solid var(--border); margin:5px 0; }
+    .sc { display:inline-block; border-radius:2px; flex-shrink:0; }
+
+    /* ── MODALS ──────────────────────────────── */
+    .modal-bg { position:fixed; inset:0; background:rgba(6,12,24,.78);
+      backdrop-filter:blur(7px); z-index:300;
+      display:flex; align-items:center; justify-content:center; }
+    .modal-bg[hidden] { display:none; }
+    .modal-box { background:var(--bg2); border:1px solid var(--border2);
+      border-radius:13px; padding:26px 28px; width:380px; max-width:93vw;
+      box-shadow:0 24px 70px rgba(0,0,0,.7); }
+    .modal-box h3 { font-family:'Space Grotesk',sans-serif;
+      font-size:15px; font-weight:600; color:var(--text); margin-bottom:18px; }
+    .modal-box label { display:flex; flex-direction:column; gap:4px;
+      font-size:11px; color:var(--dim); margin-bottom:11px; }
+    .modal-box input, .modal-box select { background:rgba(255,255,255,.05);
+      border:1px solid var(--border); color:var(--text);
+      padding:8px 10px; border-radius:6px; font-size:13px; outline:none;
+      font-family:'Inter',sans-serif; }
+    .modal-box input:focus, .modal-box select:focus { border-color:var(--blue); }
+    .modal-box select option { background:var(--bg2); }
+    .modal-actions { display:flex; gap:9px; margin-top:18px; justify-content:flex-end; }
+    .modal-actions button { padding:8px 20px; border-radius:6px;
+      font-size:13px; cursor:pointer; font-family:'Inter',sans-serif;
+      font-weight:500; transition:all .2s; }
+    .btn-confirm { background:var(--teal); border:none; color:#060c18; }
+    .btn-confirm:hover { background:var(--teal2); }
+    .btn-cancel { background:transparent; border:1px solid var(--border); color:var(--dim); }
+    .btn-cancel:hover { border-color:var(--text2); color:var(--text); }
+    .auth-tabs { display:flex; gap:2px; margin-bottom:18px; border-bottom:1px solid var(--border); }
+    .auth-tab { padding:7px 15px; background:none; border:none; color:var(--dim);
+      font-size:13px; cursor:pointer; border-bottom:2px solid transparent;
+      transition:all .2s; font-family:'Inter',sans-serif; margin-bottom:-1px; }
+    .auth-tab.active { color:var(--teal); border-bottom-color:var(--teal); }
+    .auth-status { margin-top:10px; font-size:11px; color:var(--dim); min-height:16px; }
+
+    /* ── TIMELINE ────────────────────────────── */
+    #tl { position:fixed; bottom:0; left:0; right:0; height:74px;
+      background:rgba(11,19,37,.96); border-top:1px solid var(--border);
+      z-index:80; backdrop-filter:blur(14px);
+      flex-direction:column; padding:8px 20px; display:none; }
+    #tl.show { display:flex; }
+    .tl-hdr { font-size:9px; color:var(--dim2); text-transform:uppercase;
+      letter-spacing:.1em; margin-bottom:6px; }
+    .tl-events { display:flex; gap:20px; overflow-x:auto; align-items:center;
+      flex:1; padding-bottom:2px; }
+    .tl-event { display:flex; flex-direction:column; align-items:center;
+      gap:3px; min-width:72px; }
+    .tl-year { font-size:10px; color:var(--blue); font-weight:600;
+      font-variant-numeric:tabular-nums; }
+    .tl-dot { width:7px; height:7px; border-radius:50%; background:var(--teal); }
+    .tl-lbl { font-size:9px; color:var(--dim); text-align:center; line-height:1.3; }
+
+    /* ── EXTENDED GENOGRAMS ─────────────────── */
+    .tb-ext-badge { background:rgba(6,214,160,.15); border:1px solid rgba(6,214,160,.4);
+      color:var(--teal); padding:3px 10px; border-radius:20px;
+      font-size:11px; font-weight:600; white-space:nowrap; }
+    .fam-gen-btn { background:none; border:1px solid var(--border); color:var(--dim2);
+      padding:2px 5px; border-radius:4px; font-size:9px; cursor:pointer;
+      transition:all .2s; white-space:nowrap; flex-shrink:0; margin-left:2px; }
+    .fam-gen-btn:hover { border-color:var(--teal); color:var(--teal); }
+    .fam-gen-btn.active { background:rgba(6,214,160,.15); border-color:var(--teal); color:var(--teal); }
+    .ext-cluster-label { position:fixed; font-family:'Space Grotesk',sans-serif;
+      font-size:9px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+      pointer-events:none; z-index:11; transform:translate(-50%,-22px);
+      padding:2px 7px; border-radius:10px; white-space:nowrap;
+      text-shadow:0 1px 4px rgba(6,12,24,.95); }
+
+    /* ── SCROLLBAR ───────────────────────────── */
+    ::-webkit-scrollbar { width:4px; height:4px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+    /* ── CAMERA HINT ─────────────────────────── */
+    #hint { position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+      font-size:11px; color:var(--dim2); pointer-events:none; z-index:10;
+      opacity:1; transition:opacity 1s; }
+    #hint.gone { opacity:0; }
+
+    /* ── BACK BUTTON (top-left, navigation) ── */
+    #back-btn { position:fixed; top:60px; left:14px; z-index:95;
+      background:rgba(11,19,37,.96); border:1px solid var(--border2);
+      color:var(--text2); padding:6px 13px; border-radius:8px;
+      font-size:12px; cursor:pointer; backdrop-filter:blur(14px);
+      transition:all .25s; display:none; align-items:center; gap:5px;
+      font-family:'Inter',sans-serif; }
+    #back-btn.show { display:flex; }
+    #back-btn:hover { border-color:var(--teal); color:var(--teal); }
+
+    /* ── FAMILY LIST (inside bl-card) ────── */
+    .blc-fam { border-top:1px solid var(--border); }
+    .blc-fam-hdr { display:flex; justify-content:space-between; align-items:center;
+      padding:8px 13px; cursor:pointer; user-select:none;
+      font-size:10px; color:var(--dim2); text-transform:uppercase; letter-spacing:.08em; }
+    .blc-fam-arr { font-size:9px; transition:transform .2s; }
+    .blc-fam.open .blc-fam-arr { transform:rotate(180deg); }
+    .blc-fam-body { padding:0 0 6px; display:none; max-height:220px; overflow-y:auto; }
+    .blc-fam.open .blc-fam-body { display:block; }
+    .blc-fam-label { font-size:10px; color:var(--dim2); padding:5px 13px 2px;
+      letter-spacing:.03em; }
+    .fam-item { display:flex; align-items:center; gap:7px; padding:4px 13px;
+      transition:background .15s; }
+    .fam-item:hover { background:rgba(6,214,160,.05); }
+    .fam-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .fam-info { flex:1; min-width:0; }
+    .fam-iname { font-size:11px; color:var(--text2);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .fam-irole { font-size:9px; color:var(--dim2); }
+    .fam-expand { background:none; border:1px solid var(--border); color:var(--dim);
+      padding:2px 6px; border-radius:4px; font-size:9px; cursor:pointer;
+      transition:all .2s; white-space:nowrap; flex-shrink:0; }
+    .fam-expand:hover { border-color:var(--teal); color:var(--teal); }
+
+    /* ── INFO PANEL FAMILY CONNECTIONS ──── */
+    .if-fam-item { display:flex; align-items:center; gap:8px;
+      padding:5px 0; border-bottom:1px solid var(--border); }
+    .if-fam-item:last-child { border-bottom:none; }
+    .if-fam-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .if-fam-info { flex:1; min-width:0; }
+    .if-fam-name { font-size:11px; color:var(--text2); }
+    .if-fam-role { font-size:9px; color:var(--dim2); }
+    .if-fam-goto { background:none; border:1px solid var(--border); color:var(--dim);
+      padding:2px 7px; border-radius:4px; font-size:9px; cursor:pointer;
+      transition:all .2s; flex-shrink:0; }
+    .if-fam-goto:hover { border-color:var(--teal); color:var(--teal); }
+  </style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="ld-brand">⬡ ELOS</div>
+  <div class="ld-sub">Inicializando cartografia 3D…</div>
+  <div class="ld-bar"><div class="ld-fill"></div></div>
+</div>
+
+<!-- WELCOME -->
+<div id="welcome" class="gone">
+  <div class="wc-inner">
+    <div class="wc-brand">⬡ ELOS</div>
+    <h1>Cartografia Relacional 3D</h1>
+    <p>Visualize redes de família, suporte e vínculos em três dimensões — genograma, ecomapa e dinâmicas de Bowen integrados.</p>
+    <div class="wc-btns">
+      <button class="btn-build" onclick="startNewGenogram()">🔨 Construir meu genograma</button>
+      <button class="btn-primary" onclick="enterDemo()">Explorar demo (Sofia)</button>
+      <button class="btn-sec" onclick="showAuth()">Entrar com conta</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-brand">⬡ ELOS</div>
+  <button class="layer-btn active" id="btn-genogram" onclick="toggleLayer('genogram')">Genograma</button>
+  <button class="layer-btn" id="btn-eco"      onclick="toggleLayer('eco')">Ecomapa</button>
+  <button class="layer-btn" id="btn-bowen"    onclick="toggleLayer('bowen')">Bowen</button>
+  <button class="layer-btn" id="btn-timeline" onclick="toggleLayer('timeline')">Linha do Tempo</button>
+  <button class="layer-btn" id="btn-symb"     onclick="toggleLayer('symb')">Simbologia</button>
+  <div class="tb-sep"></div>
+  <div class="depth-wrap">
+    <span>Profund.:</span>
+    <button class="depth-btn"       data-depth="1" onclick="setDepth(1)">G1</button>
+    <button class="depth-btn active" data-depth="2" onclick="setDepth(2)">G2</button>
+    <button class="depth-btn"       data-depth="3" onclick="setDepth(3)">G3+</button>
+  </div>
+  <div class="tb-sep"></div>
+  <span id="ext-badge" class="tb-ext-badge" style="display:none">⊕ 0 genogramas</span>
+  <div class="tb-spacer"></div>
+  <button class="build-btn" onclick="startNewGenogram()">🔨 Novo</button>
+  <button class="voice-btn" id="btn-voice" onclick="toggleVoicePanel()">🎙 Gravar</button>
+  <button class="add-btn" onclick="openAddModal()">+ Pessoa</button>
+  <button class="add-btn" onclick="openServiceModal()" style="background:rgba(34,197,94,.10);border-color:#22c55e;color:#22c55e">+ Serviço</button>
+  <button class="add-btn" onclick="openBondModal()" style="background:rgba(192,132,252,.14);border-color:var(--purp);color:var(--purp)">⟷ Vínculo</button>
+  <input type="search" class="tb-search" id="srch" placeholder="Buscar…" oninput="doSearch(this.value)">
+  <button class="auth-btn" id="btn-auth" onclick="showAuth()">Entrar</button>
+</div>
+
+<!-- NEW GENOGRAM BANNER -->
+<div id="new-gen-banner">
+  <span>🔨 Modo construtor ativo — genograma em branco</span>
+  <button onclick="enterDemo()">Carregar demo da Sofia</button>
+</div>
+
+<!-- CANVAS -->
+<div id="cv"></div>
+
+<!-- TOOLTIP -->
+<div id="tooltip"></div>
+
+<!-- BACK BUTTON (navigation) -->
+<button id="back-btn" onclick="goBack()">← Voltar</button>
+
+<!-- CAMERA HINT -->
+<div id="hint">🖱 Arrastar para girar · Scroll para zoom · Clique em um nó para detalhes</div>
+
+<!-- INFO PANEL (right) -->
+<div id="info">
+  <button class="info-close" onclick="closeInfo()">✕</button>
+  <div class="info-head">
+    <div class="info-avatar" id="ia">●</div>
+    <div class="info-name"  id="iname">—</div>
+    <div class="info-role"  id="irole">—</div>
+    <div class="info-badges" id="ibadges"></div>
+  </div>
+
+  <!-- Score Bowen accordion -->
+  <div class="acc-sec open" id="acc-bowen">
+    <div class="acc-hdr" onclick="toggleAcc('acc-bowen')">
+      Score Bowen <span class="acc-arr">▼</span>
+    </div>
+    <div class="acc-body">
+      <div class="bowen-score" id="bscore">—</div>
+      <div class="bowen-lbl"   id="blbl">—</div>
+    </div>
+  </div>
+
+  <!-- Alertas clínicos accordion -->
+  <div class="acc-sec open" id="acc-alerts">
+    <div class="acc-hdr" onclick="toggleAcc('acc-alerts')">
+      Alertas Clínicos <span class="acc-arr">▼</span>
+    </div>
+    <div class="acc-body">
+      <div class="alerts" id="ialerts"></div>
+    </div>
+  </div>
+
+  <!-- Evolução clínica accordion -->
+  <div class="acc-sec open" id="acc-ev">
+    <div class="acc-hdr" onclick="toggleAcc('acc-ev')">
+      Evolução Clínica <span class="acc-arr">▼</span>
+    </div>
+    <div class="acc-body">
+      <div class="ev-list" id="ev-list"></div>
+      <button class="ev-add" onclick="toggleEvForm()">+ Registrar evolução</button>
+      <div id="ev-form">
+        <textarea id="ev-input" placeholder="Observação clínica, data de hoje…"></textarea>
+        <div class="ev-actions">
+          <button class="ev-save" onclick="saveEv()">Salvar</button>
+          <button class="ev-cancel" onclick="toggleEvForm()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Família conectada accordion -->
+  <div class="acc-sec open" id="acc-famconn">
+    <div class="acc-hdr" onclick="toggleAcc('acc-famconn')">
+      Família Conectada <span class="acc-arr">▼</span>
+    </div>
+    <div class="acc-body">
+      <div id="if-fam-list"></div>
+    </div>
+  </div>
+
+  <!-- Ações rápidas accordion -->
+  <div class="acc-sec open" id="acc-actions">
+    <div class="acc-hdr" onclick="toggleAcc('acc-actions')">
+      Ações Rápidas <span class="acc-arr">▼</span>
+    </div>
+    <div class="acc-body">
+      <div class="info-actions">
+        <button class="ia-btn" onclick="toggleLayer('eco')">▸ Ver Ecomapa desta pessoa</button>
+        <button class="ia-btn" onclick="toggleLayer('bowen')">▸ Ativar camada Bowen</button>
+        <button class="ia-btn" onclick="toggleLayer('timeline')">▸ Linha do Tempo familiar</button>
+        <button class="ia-btn" onclick="openAddModal()">▸ Adicionar familiar</button>
+        <button class="ia-btn" id="ia-ext-gen" onclick="toggleExtGenogram(currentInfoId)">⊕ Expandir genograma desta pessoa</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM-LEFT CARD (simbologia + stats) -->
+<div id="bl-card">
+  <div class="blc-hdr" onclick="toggleBlCard()">
+    <span class="blc-title">⬡ ELOS</span>
+    <span class="blc-arr">▼</span>
+  </div>
+  <div class="blc-body">
+    <!-- Foco -->
+    <div class="blc-focus">
+      <span class="blc-focus-icon">⊙</span>
+      <div>
+        <div class="blc-focus-name" id="blc-focus-name">—</div>
+        <div class="blc-focus-role" id="blc-focus-role">Pessoa foco</div>
+      </div>
+    </div>
+    <!-- Stats -->
+    <div class="blc-stats">
+      <div class="blc-stat">
+        <span class="blc-stat-lbl">Nós mapeados</span>
+        <span class="blc-stat-val" id="bl-nodes">10</span>
+      </div>
+      <div class="blc-stat">
+        <span class="blc-stat-lbl">Vínculos</span>
+        <span class="blc-stat-val" id="bl-bonds">12</span>
+      </div>
+      <div class="blc-stat">
+        <span class="blc-stat-lbl">Gerações</span>
+        <span class="blc-stat-val">4</span>
+      </div>
+    </div>
+    <!-- Família collapsible dentro do card -->
+    <div class="blc-fam open" id="blc-fam">
+      <div class="blc-fam-hdr" onclick="toggleBlFam()">
+        Família <span class="blc-fam-arr">▼</span>
+      </div>
+      <div class="blc-fam-body">
+        <div class="blc-fam-label" id="blc-fam-title">Família Andrade · <span id="bl-bond-count">—</span> vínculos</div>
+        <div id="blc-fam-list"><!-- populated by JS --></div>
+      </div>
+    </div>
+    <!-- Simbologia collapsible dentro do card -->
+    <div class="blc-symb" id="blc-symb">
+      <div class="blc-symb-hdr" onclick="toggleBlSymb()">
+        Simbologia <span class="blc-symb-arr">▼</span>
+      </div>
+      <div class="blc-symb-body">
+        <div class="symb-row"><span class="si" style="color:#4a9eff">■</span> Homem (cubo azul)</div>
+        <div class="symb-row"><span class="si" style="color:#e11d7a">●</span> Mulher (esfera rosa)</div>
+        <div class="symb-row"><span class="si" style="color:#c084fc">◆</span> Trans / NB (octaedro)</div>
+        <div class="symb-row"><span class="si" style="color:#06d6a0">⊙</span> Pessoa foco (anel)</div>
+        <div class="symb-row"><span class="si" style="color:#6a8aac">⊠</span> Falecido/a (wireframe)</div>
+        <hr class="symb-div">
+        <div class="symb-row"><span class="si">═</span> Casamento</div>
+        <div class="symb-row"><span class="si" style="color:#f87171">╌</span> Separação</div>
+        <hr class="symb-div">
+        <div class="symb-row"><span class="sc" style="width:14px;height:4px;background:#4ade80"></span> Coesão Bowen</div>
+        <div class="symb-row"><span class="sc" style="width:14px;height:4px;background:#f87171"></span> Conflito Bowen</div>
+        <div class="symb-row"><span class="sc" style="width:14px;height:2px;background:#6a8aac;opacity:.6"></span> Distância Bowen</div>
+        <hr class="symb-div">
+        <div class="symb-row"><span class="sc" style="width:14px;height:3px;background:#22c55e;border-radius:2px"></span> Saúde</div>
+        <div class="symb-row"><span class="sc" style="width:14px;height:3px;background:#3b82f6;border-radius:2px"></span> Assistência social</div>
+        <div class="symb-row"><span class="sc" style="width:14px;height:3px;background:#eab308;border-radius:2px"></span> Educação</div>
+        <div class="symb-row"><span class="sc" style="width:14px;height:3px;background:#a855f7;border-radius:2px"></span> Comunidade/Religião</div>
+        <div class="symb-row"><span class="sc" style="width:14px;height:3px;background:#f97316;border-radius:2px"></span> Trabalho</div>
+        <div class="symb-row"><span class="sc" style="width:14px;height:3px;background:#ec4899;border-radius:2px"></span> Rede social</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PERSON MODAL -->
+<div class="modal-bg" id="add-modal" hidden>
+  <div class="modal-box">
+    <h3>Adicionar ao genograma</h3>
+    <label>Nome <input id="add-name" placeholder="Nome completo"></label>
+    <label>Gênero
+      <select id="add-gender">
+        <option value="M">Masculino ■</option>
+        <option value="F">Feminino ●</option>
+        <option value="T">Trans / Não-binário ◆</option>
+      </select>
+    </label>
+    <label id="add-birth-lbl">Ano de nascimento <input id="add-birth" type="number" placeholder="1980" min="1900" max="2030"></label>
+    <label id="add-ctx-wrap" hidden>
+      <span id="add-ctx-lbl">Ano do evento</span>
+      <input id="add-ctx-year" type="number" placeholder="2015" min="1900" max="2030">
+    </label>
+    <label>Falecido/a?
+      <select id="add-dec">
+        <option value="">Não</option>
+        <option value="1">Sim</option>
+      </select>
+    </label>
+    <label>Relação com a pessoa foco
+      <select id="add-rel" onchange="onRelChange(this.value)">
+        <option>Pai</option><option>Mãe</option>
+        <option>Cônjuge</option><option>Filho/a</option>
+        <option>Irmão</option><option>Irmã</option>
+        <option>Avô paterno</option><option>Avó paterna</option>
+        <option>Avô materno</option><option>Avó materna</option>
+        <option>Neto/a</option><option>Outro</option>
+      </select>
+    </label>
+    <label>Geração (posição vertical)
+      <select id="add-gen">
+        <option value="1">G1 — Bisavós / Avós</option>
+        <option value="2">G2 — Pais / Tios</option>
+        <option value="3" selected>G3 — Pessoa foco / Irmãos</option>
+        <option value="4">G4 — Filhos / Sobrinhos</option>
+        <option value="5">G5 — Netos</option>
+      </select>
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+      <input type="checkbox" id="add-focus" style="width:14px;height:14px">
+      <span>Definir como pessoa foco ⊙</span>
+    </label>
+    <label>Vínculo conjugal com
+      <select id="add-partner"><option value="">— nenhum —</option></select>
+    </label>
+    <div class="modal-actions">
+      <button class="btn-confirm" onclick="confirmAdd()">Adicionar</button>
+      <button class="btn-cancel" onclick="closeAddModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SERVIÇO / ECOMAPA MODAL -->
+<div class="modal-bg" id="service-modal" hidden>
+  <div class="modal-box">
+    <h3>Adicionar Serviço / Equipamento</h3>
+    <label>Nome do serviço <input id="svc-name" placeholder="Ex: UBS Vila Nova, CAPS, Escola..."></label>
+    <label>Tipo de equipamento
+      <select id="svc-type">
+        <option value="saude">🏥 Saúde (UBS, CAPS, hospital, clínica)</option>
+        <option value="assist">🤝 Assistência Social (CRAS, CREAS, abrigo)</option>
+        <option value="educ">🏫 Educação (escola, creche, curso)</option>
+        <option value="trab">💼 Trabalho / Renda</option>
+        <option value="relig">⛪ Religião / Espiritualidade</option>
+        <option value="social">🌐 Rede Social / Comunitária</option>
+      </select>
+    </label>
+    <label>Força do vínculo
+      <select id="svc-strength">
+        <option value="forte">Forte ━━━</option>
+        <option value="medio" selected>Médio ╌╌╌</option>
+        <option value="fraco">Fraco ┄┄┄</option>
+      </select>
+    </label>
+    <label>Ano de início do vínculo
+      <input id="svc-start-year" type="number" placeholder="Ex: 2018" min="1900" max="2030">
+    </label>
+    <label>Conectar à pessoa
+      <select id="svc-person"><option value="">— nenhum —</option></select>
+    </label>
+    <div class="modal-actions">
+      <button class="btn-confirm" onclick="confirmAddService()">Adicionar</button>
+      <button class="btn-cancel" onclick="closeServiceModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-bg" id="auth-modal" hidden>
+  <div class="modal-box">
+    <h3>Entrar no ELOS</h3>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="authTab('login')">Entrar</button>
+      <button class="auth-tab" onclick="authTab('reg')">Criar conta</button>
+    </div>
+    <div id="auth-login">
+      <label>E-mail <input type="email" id="au-email" placeholder="seu@email.com"></label>
+      <label>Senha  <input type="password" id="au-pass" placeholder="••••••••"></label>
+      <div class="modal-actions">
+        <button class="btn-confirm" onclick="doLogin()">Entrar</button>
+        <button class="btn-cancel" onclick="closeAuth()">Cancelar</button>
+      </div>
+    </div>
+    <div id="auth-reg" style="display:none">
+      <label>Nome  <input id="au-rname" placeholder="Seu nome"></label>
+      <label>E-mail <input type="email" id="au-remail" placeholder="seu@email.com"></label>
+      <label>Senha  <input type="password" id="au-rpass" placeholder="••••••••"></label>
+      <div class="modal-actions">
+        <button class="btn-confirm" onclick="doReg()">Criar conta</button>
+        <button class="btn-cancel" onclick="closeAuth()">Cancelar</button>
+      </div>
+    </div>
+    <div class="auth-status" id="auth-st"></div>
+  </div>
+</div>
+
+<!-- VOICE PANEL -->
+<div id="voice-panel">
+  <div class="vp-hdr">
+    <div class="vp-dot idle" id="vp-dot"></div>
+    <div class="vp-title">🎙 Construção por voz / texto</div>
+  </div>
+  <!-- Mode tabs -->
+  <div style="display:flex;gap:6px;margin-bottom:10px">
+    <button id="vp-tab-voice" onclick="vpSwitchTab('voice')"
+      style="flex:1;padding:5px 10px;border-radius:6px;border:1px solid var(--blue);background:var(--blue);color:#fff;font-size:12px;cursor:pointer">🎙 Voz</button>
+    <button id="vp-tab-text" onclick="vpSwitchTab('text')"
+      style="flex:1;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text-muted);font-size:12px;cursor:pointer">⌨️ Texto</button>
+  </div>
+  <!-- VOICE MODE -->
+  <div id="vp-mode-voice">
+    <div class="vp-hint">Fale naturalmente. Ex: <em>"Meu pai se chama Carlos, nasceu em 1968. Minha mãe é Lúcia. Tenho um irmão chamado Pedro."</em></div>
+    <div class="vp-transcript" id="vp-transcript"><span style="color:var(--dim)">Clique em ▶ Iniciar gravação para começar…</span></div>
+    <div id="vp-mic-error" style="display:none;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);border-radius:8px;padding:10px 12px;font-size:12px;color:#f87171;line-height:1.5;margin-top:8px">
+      <strong>Microfone bloqueado.</strong> O browser não permitiu acesso. Para liberar:<br>
+      1. Clique no 🔒 cadeado na barra de endereço<br>
+      2. Em "Microfone" selecione "Permitir"<br>
+      3. Recarregue a página<br><br>
+      <span style="color:var(--dim)">Alternativa: use a aba <strong>⌨️ Texto</strong> para digitar a descrição.</span>
+    </div>
+    <div class="vp-actions">
+      <button class="vp-btn start" id="vp-start" onclick="voiceStart()">▶ Iniciar gravação</button>
+      <button class="vp-btn stop" id="vp-stop" onclick="voiceStop()" style="display:none">■ Parar</button>
+      <button class="vp-btn build" id="vp-build" onclick="voiceBuild()" style="display:none">⬡ Construir genograma</button>
+      <button class="vp-btn cancel" onclick="toggleVoicePanel()">Fechar</button>
+    </div>
+  </div>
+  <!-- TEXT MODE -->
+  <div id="vp-mode-text" style="display:none">
+    <div class="vp-hint">Descreva a família em texto livre. Ex: <em>"Meu pai se chama Carlos, nasceu em 1968. Minha mãe é Lúcia. Tenho um irmão chamado Pedro e uma irmã chamada Luna. Sou casado com Ana."</em></div>
+    <textarea id="vp-text-input" placeholder="Digite aqui a descrição da família…"
+      style="width:100%;min-height:100px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;margin-top:6px"></textarea>
+    <div class="vp-actions" style="margin-top:8px">
+      <button class="vp-btn build" onclick="voiceBuildFromText()">⬡ Processar e construir</button>
+      <button class="vp-btn cancel" onclick="toggleVoicePanel()">Fechar</button>
+    </div>
+  </div>
+  <!-- PREVIEW (shared between modes) -->
+  <div class="vp-preview" id="vp-preview">
+    <div class="vp-preview-title">Pessoas identificadas — confirme antes de construir:</div>
+    <div class="vp-preview-list" id="vp-preview-list"></div>
+    <div style="font-size:11px;color:var(--dim);margin-top:4px">Após construir, clique com botão direito em qualquer pessoa para editar dados.</div>
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="ctx-menu">
+  <div class="ctx-name" id="ctx-name">—</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="ctxEdit()">✏️ Editar / complementar ficha</div>
+  <div class="ctx-item" onclick="ctxSetFocus()">⊙ Definir como pessoa foco</div>
+  <div class="ctx-item" id="ctx-expand" onclick="ctxExpandGen()">⊕ Expandir genograma</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item danger" onclick="ctxRemove()">✕ Remover pessoa</div>
+</div>
+
+<!-- PERSON DETAIL MODAL -->
+<div id="person-detail">
+  <div class="pd-box">
+    <div class="pd-hdr">
+      <div class="pd-icon" id="pd-icon">👤</div>
+      <div class="pd-hdr-info">
+        <div class="pd-hdr-name" id="pd-hdr-name">Nome</div>
+        <div class="pd-hdr-role" id="pd-hdr-role">Papel</div>
+      </div>
+      <button class="pd-close" onclick="closePersonDetail()">✕</button>
+    </div>
+    <div class="pd-body">
+      <!-- Identificação -->
+      <div class="pd-section">
+        <div class="pd-section-title">Identificação</div>
+        <div class="pd-grid">
+          <div class="pd-field"><label>Nome</label><input id="pd-name" type="text"></div>
+          <div class="pd-field"><label>Sobrenome(s)</label><input id="pd-surname" type="text"></div>
+          <div class="pd-field"><label>Apelido / Como é chamado/a</label><input id="pd-nickname" type="text"></div>
+          <div class="pd-field"><label>Ano de nascimento</label><input id="pd-birth" type="number" min="1900" max="2030"></div>
+        </div>
+        <div class="pd-grid tri">
+          <div class="pd-field"><label>Gênero</label>
+            <select id="pd-gender">
+              <option value="M">Homem (cis)</option>
+              <option value="F">Mulher (cis)</option>
+              <option value="T">Trans / Não-binário</option>
+              <option value="NB">Não-binário</option>
+              <option value="">Não informado</option>
+            </select>
+          </div>
+          <div class="pd-field"><label>Papel na família</label>
+            <select id="pd-role">
+              <option>Pessoa Foco</option><option>Pai</option><option>Mãe</option>
+              <option>Irmão</option><option>Irmã</option>
+              <option>Avô Paterno</option><option>Avó Paterna</option>
+              <option>Avô Materno</option><option>Avó Materna</option>
+              <option>Filho/a</option><option>Cônjuge</option>
+              <option>Neto/a</option><option>Tio</option><option>Tia</option>
+              <option>Primo</option><option>Prima</option><option>Outro</option>
+            </select>
+          </div>
+          <div class="pd-field"><label>Geração</label>
+            <select id="pd-gen">
+              <option value="1">G1 — Avós</option>
+              <option value="2">G2 — Pais</option>
+              <option value="3">G3 — Pessoa foco</option>
+              <option value="4">G4 — Filhos</option>
+              <option value="5">G5 — Netos</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Situação Civil e Social -->
+      <div class="pd-section">
+        <div class="pd-section-title">Situação Civil e Social</div>
+        <div class="pd-grid">
+          <div class="pd-field"><label>Estado civil</label>
+            <select id="pd-civil">
+              <option value="">—</option>
+              <option>Solteiro/a</option><option>Casado/a</option><option>União estável</option>
+              <option>Separado/a</option><option>Divorciado/a</option><option>Viúvo/a</option>
+            </select>
+          </div>
+          <div class="pd-field"><label>Cidade / Estado de residência</label><input id="pd-city" type="text"></div>
+          <div class="pd-field"><label>Escolaridade</label>
+            <select id="pd-edu">
+              <option value="">—</option>
+              <option>Sem escolaridade</option><option>Fundamental incompleto</option>
+              <option>Fundamental completo</option><option>Médio incompleto</option>
+              <option>Médio completo</option><option>Superior incompleto</option>
+              <option>Superior completo</option><option>Pós-graduação</option>
+            </select>
+          </div>
+          <div class="pd-field"><label>Profissão / Ocupação</label><input id="pd-job" type="text"></div>
+        </div>
+      </div>
+
+      <!-- Saúde e História -->
+      <div class="pd-section">
+        <div class="pd-section-title">Saúde e História</div>
+        <div class="pd-grid">
+          <div class="pd-field"><label>Condições de saúde relevantes</label><input id="pd-health" placeholder="ex: HAS, depressão, diabetes…"></div>
+          <div class="pd-field"><label>Uso de substâncias</label>
+            <select id="pd-subst">
+              <option value="">—</option><option>Não</option><option>Tabaco</option>
+              <option>Álcool</option><option>Cannabis</option><option>Múltiplas substâncias</option>
+            </select>
+          </div>
+        </div>
+        <div class="pd-grid">
+          <div class="pd-field">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="pd-deceased"> Falecido/a
+            </label>
+            <input id="pd-death-year" type="number" placeholder="Ano do óbito" min="1900" max="2030" style="margin-top:5px">
+          </div>
+          <div class="pd-field"><label>Causa do óbito (se aplicável)</label><input id="pd-death-cause" placeholder="ex: IAM, neoplasia…"></div>
+        </div>
+      </div>
+
+      <!-- Vínculo com Pessoa Foco -->
+      <div class="pd-section">
+        <div class="pd-section-title">Vínculo com a Pessoa Foco</div>
+        <div class="pd-grid">
+          <div class="pd-field"><label>Qualidade do vínculo predominante</label>
+            <select id="pd-bond-qual">
+              <option value="">—</option>
+              <option>Coeso / Próximo</option><option>Funcional</option>
+              <option>Distante</option><option>Conflituoso</option>
+              <option>Rompido / Corte emocional</option><option>Ambivalente</option>
+            </select>
+          </div>
+          <div class="pd-field"><label>Frequência de contato</label>
+            <select id="pd-contact">
+              <option value="">—</option>
+              <option>Diário</option><option>Semanal</option><option>Mensal</option>
+              <option>Raramente</option><option>Sem contato</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notas Clínicas -->
+      <div class="pd-section">
+        <div class="pd-section-title">Notas Clínicas / Observações</div>
+        <div class="pd-field"><textarea id="pd-notes" placeholder="Observações relevantes para o acompanhamento, contexto histórico, eventos marcantes…" style="min-height:80px"></textarea></div>
+      </div>
+    </div>
+    <div class="pd-footer">
+      <button class="pd-cancel" onclick="closePersonDetail()">Cancelar</button>
+      <button class="pd-save" onclick="savePersonDetail()">💾 Salvar ficha</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOND MODAL -->
+<div class="modal-bg" id="bond-modal" hidden>
+  <div class="modal-box" style="max-width:420px">
+    <h3>Adicionar vínculo</h3>
+    <label>Tipo de vínculo
+      <select id="bond-type">
+        <option value="casamento">Casamento / União estável</option>
+        <option value="separacao">Separação / Divórcio</option>
+        <option value="filiacao">Filiação (pai/mãe → filho/a)</option>
+        <option value="bowen_coesao">Bowen — Coesão</option>
+        <option value="bowen_conflito">Bowen — Conflito</option>
+        <option value="bowen_distancia">Bowen — Distância emocional</option>
+        <option value="bowen_corte">Bowen — Corte emocional</option>
+      </select>
+    </label>
+    <div class="bond-pair">
+      <select id="bond-a"><option value="">— Pessoa A —</option></select>
+      <span id="bond-lbl-mid">↔</span>
+      <select id="bond-b"><option value="">— Pessoa B —</option></select>
+    </div>
+    <div id="bond-filiacao-extra" style="display:none">
+      <label style="margin-top:8px;font-size:12px;color:var(--dim)">
+        Para filiação: Pessoa A = pai/mãe principal, Pessoa B = filho/a.
+        <br>Segundo pai/mãe (opcional):
+        <select id="bond-parent2"><option value="">— nenhum —</option></select>
+      </label>
+    </div>
+    <label id="bond-year-lbl" style="display:none">Ano do evento
+      <input id="bond-year" type="number" placeholder="ex: 2019" min="1900" max="2030">
+    </label>
+    <div class="modal-actions">
+      <button class="btn-confirm" onclick="confirmBond()">Criar vínculo</button>
+      <button class="btn-cancel" onclick="closeBondModal()">Cancelar</button>
+    </div>
+    <div id="bond-st" style="font-size:11px;color:var(--red);margin-top:6px"></div>
+  </div>
+</div>
+
+<!-- TIMELINE -->
+<div id="tl">
+  <div class="tl-hdr">Eventos familiares</div>
+  <div class="tl-events" id="tl-events"></div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════════════
+const PEOPLE = [
+  {id:'joao',     name:'João',     gender:'M', birth:1942, death:2020, role:'Avô Paterno',  gen:1, x:-7,  y:9,   z:0, deceased:true},
+  {id:'maria',    name:'Maria E.', gender:'F', birth:1945,             role:'Avó Paterna',  gen:1, x:-4,  y:9,   z:0},
+  {id:'francisco',name:'Francisco',gender:'M', birth:1940,             role:'Avô Materno',  gen:1, x:4,   y:9,   z:0},
+  {id:'helena',   name:'Helena',   gender:'F', birth:1943,             role:'Avó Materna',  gen:1, x:7,   y:9,   z:0},
+  {id:'carlos',   name:'Carlos',   gender:'M', birth:1968,             role:'Pai',          gen:2, x:-2,  y:2,   z:0},
+  {id:'lucia',    name:'Lúcia',    gender:'F', birth:1970,             role:'Mãe',          gen:2, x:2,   y:2,   z:0},
+  {id:'pedro',    name:'Pedro',    gender:'M', birth:1990,             role:'Irmão',        gen:3, x:-5,  y:-5,  z:0},
+  {id:'sofia',    name:'Sofia',    gender:'F', birth:1993,             role:'Pessoa Foco',  gen:3, x:0,   y:-5,  z:0, focus:true},
+  {id:'luna',     name:'Luna',     gender:'T', birth:1998,             role:'Irmã (trans)', gen:3, x:5,   y:-5,  z:0},
+  {id:'clara',    name:'Clara',    gender:'F', birth:2018,             role:'Filha',        gen:4, x:0,   y:-11, z:0},
+];
+
+const BONDS = [
+  {type:'casamento',  a:'joao',      b:'maria'},
+  {type:'casamento',  a:'francisco', b:'helena'},
+  {type:'separacao',  a:'carlos',    b:'lucia',  year:2019},
+  {type:'filiacao',   parents:['joao','maria'],       child:'carlos'},
+  {type:'filiacao',   parents:['francisco','helena'],  child:'lucia'},
+  {type:'filiacao',   parents:['carlos','lucia'],      child:'pedro'},
+  {type:'filiacao',   parents:['carlos','lucia'],      child:'sofia'},
+  {type:'filiacao',   parents:['carlos','lucia'],      child:'luna'},
+  {type:'filiacao',   parents:['sofia'],               child:'clara'},
+  {type:'bowen_conflito', a:'carlos', b:'sofia'},
+  {type:'bowen_coesao',   a:'sofia',  b:'luna'},
+  {type:'bowen_distancia',a:'joao',   b:'carlos'},
+];
+
+const ECO_NODES = [
+  {id:'ubs',   name:'UBS Vila Nova',        type:'saude',  x:-8, y:-5,  z:4, strength:'fraco'},
+  {id:'cras',  name:'CRAS',                 type:'assist', x:-9, y:-2,  z:3, strength:'fraco'},
+  {id:'escola',name:'Escola Pública',       type:'educ',   x:-6, y:1,   z:5, strength:'medio'},
+  {id:'lgbtq', name:'Rede LGBTQ+',          type:'social', x:8,  y:-5,  z:4, strength:'forte'},
+  {id:'trab',  name:'Trabalho Precário',    type:'trab',   x:9,  y:-2,  z:3, strength:'medio'},
+  {id:'com',   name:'Comunidade Evangélica',type:'relig',  x:8,  y:1,   z:5, strength:'forte'},
+];
+
+const ECO_BONDS = [
+  {from:'sofia', to:'ubs',    type:'saude',  strength:'fraco'},
+  {from:'sofia', to:'cras',   type:'assist', strength:'fraco'},
+  {from:'sofia', to:'escola', type:'educ',   strength:'medio'},
+  {from:'sofia', to:'lgbtq',  type:'social', strength:'forte'},
+  {from:'luna',  to:'lgbtq',  type:'social', strength:'forte'},
+  {from:'sofia', to:'trab',   type:'trab',   strength:'medio'},
+  {from:'carlos',to:'com',    type:'relig',  strength:'forte'},
+  {from:'lucia', to:'com',    type:'relig',  strength:'medio'},
+];
+
+const ECO_COLORS = {
+  saude:0x22c55e, assist:0x3b82f6, educ:0xeab308,
+  relig:0xa855f7, trab:0xf97316, social:0xec4899,
+};
+
+const TL_EVENTS = [
+  {year:1940,label:'Nasc. Francisco'},{year:1942,label:'Nasc. João'},
+  {year:1943,label:'Nasc. Helena'},{year:1945,label:'Nasc. Maria E.'},
+  {year:1968,label:'Nasc. Carlos'},{year:1970,label:'Nasc. Lúcia'},
+  {year:1990,label:'Nasc. Pedro'},{year:1993,label:'Nasc. Sofia'},
+  {year:1998,label:'Nasc. Luna'},{year:2018,label:'Nasc. Clara'},
+  {year:2019,label:'Sep. Carlos/Lúcia'},{year:2020,label:'† João'},
+];
+
+const BOWEN_DATA = {
+  carlos:{score:74, lbl:'Alto conflito com Sofia'},
+  sofia: {score:42, lbl:'Risco moderado — mãe solo'},
+  luna:  {score:28, lbl:'Coesão com Sofia'},
+  joao:  {score:58, lbl:'Distância emocional — luto'},
+  lucia: {score:35, lbl:'Pós-separação — adaptação'},
+  pedro: {score:22, lbl:'Periferia familiar — estável'},
+};
+
+const ALERT_DATA = {
+  joao:   ['Falecido — luto não elaborado em Carlos'],
+  carlos: ['Conflito ativo com Sofia', 'Separação 2019 — reatividade emocional'],
+  luna:   ['Vulnerabilidade LGBTQ+ — rede de suporte precária'],
+  sofia:  ['Mãe solo — sobrecarga', 'Clara sem pai identificado no prontuário'],
+};
+
+// Evolução Clínica (por pessoa)
+const EVOLUCAO = {
+  sofia: [
+    {date:'2024-03-15', author:'Dr. Rodrigo',
+     text:'Primeira avaliação. Sofia, 31 anos, mãe solo, sobrecarga evidente. Clara (6) sem pai registrado. Redes de suporte fragilizadas. Encaminhamento ao CRAS.'},
+    {date:'2024-06-22', author:'Dr. Rodrigo',
+     text:'Sessão de genograma colaborativo. Conflito com Carlos evidenciado. Luna como recurso afetivo central. Orientação sobre acesso à rede LGBTQ+.'},
+    {date:'2024-09-10', author:'Dr. Rodrigo',
+     text:'Retorno trimestral. Melhora de engajamento com CRAS. Score Bowen reduziu de 58 para 42. Risco diminuído. Continuar acompanhamento.'},
+  ],
+  carlos: [
+    {date:'2024-01-08', author:'Dr. Rodrigo',
+     text:'Avaliação inicial. Conflito ativo com filha Sofia. Alta reatividade emocional pós-separação (2019). Indicado suporte grupal para pais separados.'},
+    {date:'2024-05-14', author:'Dr. Rodrigo',
+     text:'Score Bowen = 74. Padrão de fusão-corte com Sofia. Possível triangulação via Clara. Trabalho de diferenciação indicado.'},
+  ],
+  luna: [
+    {date:'2024-04-03', author:'Dr. Rodrigo',
+     text:'Primeira avaliação. Luna, 26 anos, identidade trans. Rede de suporte centrada em Sofia. Vínculo Coesão Bowen = 28. Recursos: Rede LGBTQ+.'},
+  ],
+};
+
+// ════════════════════════════════════════════════════
+// EXTENDED GENOGRAMS DATA
+// ════════════════════════════════════════════════════
+// Each person gets their own extended mini-genogram at a unique Z depth.
+// Nodes use id prefix 'x_' + personId. Ghost nodes reproduce the focal
+// person in the extended z-plane (isShadow:true = semi-transparent wireframe).
+const EXTENDED_GENOGRAMS = {
+  joao: {
+    title:'Família de João', color:0x3b82f6, hex:'#3b82f6', zOff:-15,
+    nodes:[
+      {id:'xj_j',  name:'João ✦',  gender:'M',birth:1942,death:2020,x:-7, y:9,  isShadow:true,deceased:true},
+      {id:'xj_an', name:'Antônio', gender:'M',birth:1910,death:1975,x:-9, y:15, deceased:true},
+      {id:'xj_ro', name:'Rosa',    gender:'F',birth:1914,death:1982,x:-6, y:15, deceased:true},
+      {id:'xj_ma', name:'Manoel',  gender:'M',birth:1944,death:2015,x:-11,y:9,  deceased:true},
+      {id:'xj_te', name:'Teresa',  gender:'F',birth:1948,           x:-5, y:9},
+    ],
+    bonds:[
+      {type:'casamento',a:'xj_an',b:'xj_ro'},
+      {type:'filiacao',parents:['xj_an','xj_ro'],child:'xj_j'},
+      {type:'filiacao',parents:['xj_an','xj_ro'],child:'xj_ma'},
+    ]
+  },
+  maria: {
+    title:'Família de Maria', color:0xe11d7a, hex:'#e11d7a', zOff:-13,
+    nodes:[
+      {id:'xm_m',  name:'Maria ✦', gender:'F',birth:1945,           x:-4, y:9,  isShadow:true},
+      {id:'xm_jo', name:'José M.', gender:'M',birth:1918,death:1990,x:-3, y:15, deceased:true},
+      {id:'xm_an', name:'Ana M.',  gender:'F',birth:1920,death:2000,x:0,  y:15, deceased:true},
+      {id:'xm_ce', name:'Célia',   gender:'F',birth:1947,           x:-6, y:9},
+      {id:'xm_no', name:'Norberto',gender:'M',birth:1950,           x:-2, y:9},
+    ],
+    bonds:[
+      {type:'casamento',a:'xm_jo',b:'xm_an'},
+      {type:'filiacao',parents:['xm_jo','xm_an'],child:'xm_m'},
+      {type:'filiacao',parents:['xm_jo','xm_an'],child:'xm_ce'},
+      {type:'filiacao',parents:['xm_jo','xm_an'],child:'xm_no'},
+    ]
+  },
+  francisco: {
+    title:'Família de Francisco', color:0x10b981, hex:'#10b981', zOff:-16,
+    nodes:[
+      {id:'xf_f',  name:'Francisco ✦',gender:'M',birth:1940,x:4,  y:9,  isShadow:true},
+      {id:'xf_mi', name:'Miguel',      gender:'M',birth:1912,death:1985,x:3,y:15,deceased:true},
+      {id:'xf_ca', name:'Carla F.',    gender:'F',birth:1915,death:1992,x:6,y:15,deceased:true},
+      {id:'xf_al', name:'Alberto',     gender:'M',birth:1943,death:2010,x:8,y:9, deceased:true},
+      {id:'xf_gl', name:'Glória',      gender:'F',birth:1946,           x:2,y:9},
+    ],
+    bonds:[
+      {type:'casamento',a:'xf_mi',b:'xf_ca'},
+      {type:'filiacao',parents:['xf_mi','xf_ca'],child:'xf_f'},
+      {type:'filiacao',parents:['xf_mi','xf_ca'],child:'xf_al'},
+      {type:'filiacao',parents:['xf_mi','xf_ca'],child:'xf_gl'},
+    ]
+  },
+  helena: {
+    title:'Família de Helena', color:0xf59e0b, hex:'#f59e0b', zOff:-14,
+    nodes:[
+      {id:'xh_h',  name:'Helena ✦', gender:'F',birth:1943,x:7,  y:9,  isShadow:true},
+      {id:'xh_ra', name:'Raimundo', gender:'M',birth:1920,death:1998,x:6,y:15,deceased:true},
+      {id:'xh_be', name:'Benedita', gender:'F',birth:1922,death:2005,x:9,y:15,deceased:true},
+      {id:'xh_da', name:'Dalva',    gender:'F',birth:1946,           x:11,y:9},
+      {id:'xh_ge', name:'Geraldo',  gender:'M',birth:1950,           x:5, y:9},
+    ],
+    bonds:[
+      {type:'casamento',a:'xh_ra',b:'xh_be'},
+      {type:'filiacao',parents:['xh_ra','xh_be'],child:'xh_h'},
+      {type:'filiacao',parents:['xh_ra','xh_be'],child:'xh_da'},
+      {type:'filiacao',parents:['xh_ra','xh_be'],child:'xh_ge'},
+    ]
+  },
+  carlos: {
+    title:'Família de Carlos', color:0x6366f1, hex:'#6366f1', zOff:-9,
+    nodes:[
+      {id:'xc_c',  name:'Carlos ✦', gender:'M',birth:1968,x:-2, y:2,  isShadow:true},
+      {id:'xc_ro', name:'Roberto',  gender:'M',birth:1965,      x:-6, y:2},
+      {id:'xc_sa', name:'Sara',     gender:'F',birth:1972,      x:-4, y:2},
+      {id:'xc_rf', name:'Rafael',   gender:'M',birth:1995,      x:-6, y:-5},
+      {id:'xc_bt', name:'Beatriz C.',gender:'F',birth:1998,     x:-4, y:-5},
+    ],
+    bonds:[
+      {type:'filiacao',parents:['xc_c'],child:'xc_rf'},
+      {type:'filiacao',parents:['xc_sa'],child:'xc_bt'},
+    ]
+  },
+  lucia: {
+    title:'Família de Lúcia', color:0x8b5cf6, hex:'#8b5cf6', zOff:9,
+    nodes:[
+      {id:'xl_l',  name:'Lúcia ✦',  gender:'F',birth:1970,x:2,  y:2,  isShadow:true},
+      {id:'xl_gu', name:'Guilherme',gender:'M',birth:1973,      x:5,  y:2},
+      {id:'xl_bi', name:'Beatriz L.',gender:'F',birth:1976,     x:7,  y:2},
+      {id:'xl_ia', name:'Iago',     gender:'M',birth:2001,      x:6,  y:-5},
+    ],
+    bonds:[
+      {type:'filiacao',parents:['xl_gu'],child:'xl_ia'},
+    ]
+  },
+  pedro: {
+    title:'Família de Pedro', color:0x06b6d4, hex:'#06b6d4', zOff:8,
+    nodes:[
+      {id:'xp_p',  name:'Pedro ✦', gender:'M',birth:1990,x:-5, y:-5,  isShadow:true},
+      {id:'xp_an', name:'Ana P.',  gender:'F',birth:1992,x:-7, y:-5},
+      {id:'xp_to', name:'Tomás',   gender:'M',birth:2016,x:-8, y:-11},
+      {id:'xp_ju', name:'Júlia P.',gender:'F',birth:2019,x:-5, y:-11},
+    ],
+    bonds:[
+      {type:'casamento',a:'xp_p',b:'xp_an'},
+      {type:'filiacao',parents:['xp_p','xp_an'],child:'xp_to'},
+      {type:'filiacao',parents:['xp_p','xp_an'],child:'xp_ju'},
+    ]
+  },
+  sofia: {
+    title:'Genograma de Sofia', color:0x06d6a0, hex:'#06d6a0', zOff:0,
+    nodes:[], bonds:[] // Sofia IS the main genogram
+  },
+  luna: {
+    title:'Rede Afetiva de Luna', color:0xd946ef, hex:'#d946ef', zOff:10,
+    nodes:[
+      {id:'xlu_l', name:'Luna ✦',  gender:'T',birth:1998,x:5,  y:-5, isShadow:true},
+      {id:'xlu_ce',name:'Celeste', gender:'T',birth:1995,x:7,  y:-5},
+      {id:'xlu_br',name:'Bruna',   gender:'F',birth:2000,x:9,  y:-5},
+      {id:'xlu_ma',name:'Marcus',  gender:'M',birth:1990,x:8,  y:-2},
+    ],
+    bonds:[
+      {type:'casamento',a:'xlu_l',b:'xlu_ce'},
+    ]
+  },
+  clara: {
+    title:'Mundo de Clara', color:0xf97316, hex:'#f97316', zOff:14,
+    nodes:[
+      {id:'xcl_c',  name:'Clara ✦',    gender:'F',birth:2018,x:0,  y:-11, isShadow:true},
+      {id:'xcl_pr', name:'Profa. Lila',gender:'F',birth:1985,x:2,  y:-11},
+      {id:'xcl_am', name:'Isadora',    gender:'F',birth:2017,x:-2, y:-11},
+      {id:'xcl_pa', name:'Pai (NI)',   gender:'M',birth:1990,x:4,  y:-5},
+    ],
+    bonds:[
+      {type:'filiacao',parents:['xcl_pa','xcl_c'],child:'xcl_c'},
+    ]
+  },
+};
+
+// ════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════
+let scene, camera, renderer, controls, clock, raycaster, mouse;
+let nodeMap    = {};
+let genLayer   = [];
+let bowenLayer = [];
+let ecoMeshes  = [];
+let ecoLayer   = [];
+let genByMinGen= {};
+// Multi-toggle: each key can be true/false independently
+const activeLayers = {genogram:true, eco:false, bowen:false};
+let currentDepth = 2;
+let aniId;
+let supa = null;
+let nextId = 200;
+let currentInfoId = null;
+
+// Extended genograms
+let expandedGenograms = new Set();   // set of person IDs with active ext genogram
+let extNodeMap = {};                  // extNodeId → {mesh,label,personId,data}
+let extBondCache = {};                // personId → array of Three.js meshes (bonds + anchor)
+
+// ════════════════════════════════════════════════════
+// SUPABASE
+// ════════════════════════════════════════════════════
+const SUPA_URL = 'https://wnsufourebpvgikkvuig.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Induc3Vmb3VyZWJwdmdpa2t2dWlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MDAzMTMsImV4cCI6MjEwNDI3NjMxM30.L4W6gdLj0l4Y_e2sz4pU3T9E0vkMR-B2hvf0KIAg-0Y';
+function initSupa() {
+  try { supa = window.supabase.createClient(SUPA_URL, SUPA_KEY); } catch(e) {}
+}
+
+// ════════════════════════════════════════════════════
+// NODE GEOMETRY
+// ════════════════════════════════════════════════════
+function makeGeom(g) {
+  if (g==='M') return new THREE.BoxGeometry(1.4,1.4,1.4);
+  if (g==='F') return new THREE.SphereGeometry(0.82,20,20);
+  return new THREE.OctahedronGeometry(0.92);
+}
+function makeMat(g, isFocus, isDead) {
+  const cols = {M:0x2563eb, F:0xe11d7a, T:0x7c3aed};
+  const col = cols[g] || 0x6b7280;
+  if (isDead) return new THREE.MeshPhysicalMaterial({color:col,wireframe:true,opacity:.45,transparent:true});
+  if (isFocus) return new THREE.MeshPhysicalMaterial({color:0x06d6a0,metalness:.3,roughness:.2,emissive:0x02a070,emissiveIntensity:.35});
+  return new THREE.MeshPhysicalMaterial({color:col,metalness:.4,roughness:.3,emissive:col,emissiveIntensity:.06});
+}
+function buildNodeMesh(d) {
+  const mesh = new THREE.Mesh(makeGeom(d.gender), makeMat(d.gender, d.focus, d.deceased));
+  mesh.position.set(d.x, d.y, d.z);
+  mesh.castShadow = true; mesh.receiveShadow = true;
+  mesh._baseY = d.y; mesh._floatOff = Math.random()*Math.PI*2;
+  mesh._nodeData = d; mesh.userData.nodeId = d.id;
+  if (d.focus) {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(1.42,.11,10,28),
+      new THREE.MeshPhysicalMaterial({color:0x06d6a0,emissive:0x06d6a0,emissiveIntensity:.6,metalness:.1,roughness:.25})
+    );
+    ring.rotation.x = Math.PI/2; mesh.add(ring);
+  }
+  if (d.deceased) {
+    const xmat = new THREE.MeshBasicMaterial({color:0x888899});
+    [-1,1].forEach(s => {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(2.4,.10,.10), xmat);
+      bar.rotation.z = s*Math.PI/4; mesh.add(bar);
+    });
+  }
+  return mesh;
+}
+
+// ════════════════════════════════════════════════════
+// ECO NODE
+// ════════════════════════════════════════════════════
+const ECO_GEOMS = {
+  saude:  ()=>new THREE.OctahedronGeometry(.72),
+  assist: ()=>new THREE.BoxGeometry(1,1,1),
+  educ:   ()=>new THREE.ConeGeometry(.68,1.25,6),
+  relig:  ()=>new THREE.SphereGeometry(.67,14,14),
+  trab:   ()=>new THREE.CylinderGeometry(.38,.58,1.1,7),
+  social: ()=>new THREE.TorusGeometry(.55,.18,9,22),
+};
+function buildEcoMesh(d) {
+  const col = ECO_COLORS[d.type]||0x888888;
+  const mesh = new THREE.Mesh(
+    (ECO_GEOMS[d.type]||ECO_GEOMS.saude)(),
+    new THREE.MeshPhysicalMaterial({color:col,metalness:.2,roughness:.5,emissive:col,emissiveIntensity:.12,transparent:true,opacity:.88})
+  );
+  mesh.position.set(d.x,d.y,d.z);
+  mesh._baseY=d.y; mesh._floatOff=Math.random()*Math.PI*2;
+  mesh._ecoData=d; mesh.userData.ecoId=d.id; mesh.visible=false;
+  return mesh;
+}
+
+// ════════════════════════════════════════════════════
+// LABELS
+// ════════════════════════════════════════════════════
+function buildLabel(id, name, isFocus, role) {
+  const div = document.createElement('div');
+  div.className = 'nd-label'+(isFocus?' focus':'');
+  if (role && !isFocus) {
+    div.innerHTML = '<span>'+name+'</span><span class="nd-role">'+role+'</span>';
+  } else {
+    div.textContent = name;
+  }
+  div.dataset.lid = id;
+  document.body.appendChild(div); return div;
+}
+
+// ════════════════════════════════════════════════════
+// CONNECTIONS
+// ════════════════════════════════════════════════════
+function tube(pa, pb, r, color, transparent) {
+  const geo = new THREE.TubeGeometry(new THREE.LineCurve3(pa.clone(),pb.clone()),1,r,7,false);
+  const mat = transparent
+    ? new THREE.MeshBasicMaterial({color,transparent:true,opacity:.55})
+    : new THREE.MeshBasicMaterial({color});
+  return new THREE.Mesh(geo, mat);
+}
+function arcTube(pa, mid, pb, r, color, segs) {
+  const geo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3([pa.clone(),mid.clone(),pb.clone()]),segs||16,r,7,false);
+  return new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color}));
+}
+
+function drawMarriage(posA, posB, isSep, minGen) {
+  const mid = new THREE.Vector3().addVectors(posA,posB).multiplyScalar(.5);
+  const dir = new THREE.Vector3().subVectors(posB,posA).normalize();
+  let perp = new THREE.Vector3().crossVectors(dir,new THREE.Vector3(0,0,1)).normalize().multiplyScalar(.16);
+  if (perp.lengthSq()<.001) perp = new THREE.Vector3(0,.16,0);
+  const color = isSep ? 0x7aaabb : 0xaaccee;
+  const objs = [];
+  [1,-1].forEach(s => {
+    const off = perp.clone().multiplyScalar(s);
+    const t = tube(posA.clone().add(off), posB.clone().add(off), .06, color);
+    scene.add(t); objs.push(t);
+  });
+  if (isSep) {
+    const slashA = mid.clone().add(new THREE.Vector3(-.3,-.55,0));
+    const slashB = mid.clone().add(new THREE.Vector3(.3,.55,0));
+    const s = tube(slashA, slashB, .07, 0xf87171);
+    scene.add(s); objs.push(s);
+  }
+  objs.forEach(o=>{ o._minGen=minGen; }); return {mid,objs};
+}
+
+function drawDirectArc(fromPos, toPos, color, minGen) {
+  const cp = new THREE.Vector3((fromPos.x+toPos.x)/2,(fromPos.y+toPos.y)/2+.5,(fromPos.z+toPos.z)/2);
+  const m = arcTube(fromPos,cp,toPos,.055,color||0x5588aa,14);
+  m._minGen = minGen||2; scene.add(m); return m;
+}
+
+function drawSiblingBar(parentMid, childPositions, minGen) {
+  const objs = []; const color = 0x5588aa;
+  if (!childPositions.length) return objs;
+  if (childPositions.length===1) { objs.push(drawDirectArc(parentMid,childPositions[0],color,minGen)); return objs; }
+  const barY = parentMid.y+(childPositions[0].y-parentMid.y)*.42;
+  const barZ = parentMid.z;
+  const vDrop = tube(parentMid.clone(), new THREE.Vector3(parentMid.x,barY,barZ), .055, color);
+  vDrop._minGen=minGen; scene.add(vDrop); objs.push(vDrop);
+  const minX = Math.min(...childPositions.map(p=>p.x));
+  const maxX = Math.max(...childPositions.map(p=>p.x));
+  const hBar = tube(new THREE.Vector3(minX,barY,barZ), new THREE.Vector3(maxX,barY,barZ), .055, color);
+  hBar._minGen=minGen; scene.add(hBar); objs.push(hBar);
+  childPositions.forEach(cp => {
+    const d = tube(new THREE.Vector3(cp.x,barY,barZ), cp.clone(), .055, color);
+    d._minGen=minGen; scene.add(d); objs.push(d);
+  });
+  return objs;
+}
+
+function drawBowen(posA, posB, btype) {
+  const cols = {bowen_coesao:0x4ade80, bowen_conflito:0xf87171, bowen_distancia:0x6a8aac, bowen_corte:0xff4400};
+  const color = cols[btype]||0x888888;
+  const mid = new THREE.Vector3().addVectors(posA,posB).multiplyScalar(.5);
+  const dist = posA.distanceTo(posB); const arcH = dist*.38;
+  const cp = new THREE.Vector3(mid.x, mid.y+arcH, mid.z+arcH*.6);
+  const objs = [];
+  if (btype==='bowen_conflito'||btype==='bowen_corte') {
+    const curve = new THREE.CatmullRomCurve3([posA.clone(),cp.clone(),posB.clone()]);
+    const pts = curve.getPoints(20);
+    for (let i=0;i<pts.length-1;i++) {
+      const p0=pts[i].clone(), p1=pts[i+1].clone();
+      const off=(i%2===0?.22:-.22); p0.z+=off; p1.z+=off;
+      const seg=tube(p0,p1,.065,color); scene.add(seg); objs.push(seg);
+    }
+  } else if (btype==='bowen_distancia') {
+    const curve = new THREE.CatmullRomCurve3([posA.clone(),cp.clone(),posB.clone()]);
+    const pts = curve.getPoints(26);
+    for (let i=0;i<pts.length-1;i+=2) {
+      const seg=tube(pts[i].clone(),pts[i+1].clone(),.045,color,true);
+      scene.add(seg); objs.push(seg);
+    }
+  } else {
+    const m=arcTube(posA,cp,posB,.075,color,18); scene.add(m); objs.push(m);
+  }
+  objs.forEach(o=>{ o.visible=false; }); return objs;
+}
+
+function drawEcoBond(posA, posB, etype, strength) {
+  const color = ECO_COLORS[etype]||0x888888;
+  const r = strength==='forte'?.11:strength==='medio'?.065:.032;
+  const mid = new THREE.Vector3().addVectors(posA,posB).multiplyScalar(.5);
+  mid.z+=1.4;
+  const m=arcTube(posA,mid,posB,r,color,14);
+  m.material.transparent=true; m.material.opacity=.72;
+  m.visible=false; scene.add(m); return m;
+}
+
+// ════════════════════════════════════════════════════
+// SCENE INIT
+// ════════════════════════════════════════════════════
+function initScene() {
+  const container = document.getElementById('cv');
+  const W=container.clientWidth, H=container.clientHeight;
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x060c18);
+  scene.fog = new THREE.FogExp2(0x060c18,.018);
+  renderer = new THREE.WebGLRenderer({antialias:true,alpha:false});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(W,H);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  container.appendChild(renderer.domElement);
+  camera = new THREE.PerspectiveCamera(55,W/H,.1,200);
+  camera.position.set(0,12,28); camera.lookAt(0,2,0);
+  controls = new THREE.OrbitControls(camera,renderer.domElement);
+  controls.target.set(0,2,0); controls.enableDamping=true;
+  controls.dampingFactor=.08; controls.minDistance=6;
+  controls.maxDistance=75; controls.maxPolarAngle=Math.PI*.84;
+  controls.update();
+  scene.add(new THREE.AmbientLight(0x1a2a4a,1.2));
+  const dir = new THREE.DirectionalLight(0x8ab4d8,.8);
+  dir.position.set(10,20,10); dir.castShadow=true;
+  dir.shadow.camera.near=.5; dir.shadow.camera.far=80;
+  dir.shadow.camera.left=dir.shadow.camera.bottom=-22;
+  dir.shadow.camera.right=dir.shadow.camera.top=22;
+  scene.add(dir);
+  const p1=new THREE.PointLight(0x06d6a0,.6,30); p1.position.set(-8,8,5); scene.add(p1);
+  const p2=new THREE.PointLight(0x4a9eff,.5,25); p2.position.set(8,8,5); scene.add(p2);
+  const p3=new THREE.PointLight(0xc084fc,.4,20); p3.position.set(0,-5,8); scene.add(p3);
+  const grid = new THREE.GridHelper(60,30,0x1a2d4e,0x0f1829);
+  grid.position.y=-13; scene.add(grid);
+  raycaster=new THREE.Raycaster(); mouse=new THREE.Vector2(); clock=new THREE.Clock();
+  window.addEventListener('resize',onResize);
+  renderer.domElement.addEventListener('click',onCanvasClick);
+  renderer.domElement.addEventListener('mousemove',onCanvasHover);
+}
+
+// ════════════════════════════════════════════════════
+// POPULATE SCENE
+// ════════════════════════════════════════════════════
+function buildGenByMinGen(minGen, objs) {
+  if (!genByMinGen[minGen]) genByMinGen[minGen]=[];
+  genByMinGen[minGen].push(...objs);
+}
+function populateScene() {
+  PEOPLE.forEach(d => {
+    const mesh=buildNodeMesh(d);
+    scene.add(mesh);
+    const label=buildLabel(d.id,d.name,d.focus);
+    nodeMap[d.id]={mesh,data:d,label};
+  });
+  drawAllBonds();
+  ECO_NODES.forEach(d => {
+    const mesh=buildEcoMesh(d);
+    scene.add(mesh);
+    const label=buildLabel(d.id,d.name,false);
+    nodeMap[d.id]={mesh,data:{...d,isEco:true},label};
+    ecoMeshes.push(mesh);
+  });
+  ECO_BONDS.forEach(b => {
+    const from=nodeMap[b.from], to=nodeMap[b.to];
+    if (!from||!to) return;
+    ecoLayer.push(drawEcoBond(from.mesh.position.clone(),to.mesh.position.clone(),b.type,b.strength));
+  });
+  buildTimeline();
+  refreshPartnerSelect();
+  applyDepth(currentDepth);
+  applyLayers();
+  updateStats();
+  populateBlFamList();
+  initExtGenograms();
+}
+
+function drawAllBonds() {
+  const marriageMids = {};
+  BONDS.forEach(b => {
+    if (b.type!=='casamento'&&b.type!=='separacao') return;
+    const nA=nodeMap[b.a], nB=nodeMap[b.b]; if (!nA||!nB) return;
+    const minGen=Math.min(nA.data.gen,nB.data.gen);
+    const {mid,objs}=drawMarriage(nA.mesh.position.clone(),nB.mesh.position.clone(),b.type!=='casamento',minGen);
+    marriageMids[[b.a,b.b].sort().join('|')]=mid;
+    genLayer.push(...objs); buildGenByMinGen(minGen,objs);
+  });
+  const filGroups={};
+  BONDS.forEach(b => {
+    if (b.type!=='filiacao') return;
+    const pKey=[...b.parents].sort().join('|');
+    if (!filGroups[pKey]) filGroups[pKey]={parents:b.parents,children:[]};
+    filGroups[pKey].children.push(b.child);
+  });
+  Object.values(filGroups).forEach(grp => {
+    const {parents,children}=grp;
+    let parentMid;
+    if (parents.length>=2) {
+      const key=[...parents].sort().join('|');
+      parentMid=marriageMids[key];
+      if (!parentMid) {
+        const pA=nodeMap[parents[0]], pB=nodeMap[parents[1]];
+        if (pA&&pB) parentMid=new THREE.Vector3().addVectors(pA.mesh.position,pB.mesh.position).multiplyScalar(.5);
+      }
+    } else {
+      const p=nodeMap[parents[0]]; if (p) parentMid=p.mesh.position.clone();
+    }
+    if (!parentMid) return;
+    const minGen=Math.min(...parents.map(pid=>nodeMap[pid]?.data.gen||3));
+    const childPos=children.map(cid=>nodeMap[cid]?.mesh.position.clone()).filter(Boolean);
+    const objs=drawSiblingBar(parentMid,childPos,minGen);
+    genLayer.push(...objs); buildGenByMinGen(minGen,objs);
+  });
+  BONDS.forEach(b => {
+    if (!b.type.startsWith('bowen_')) return;
+    const nA=nodeMap[b.a], nB=nodeMap[b.b]; if (!nA||!nB) return;
+    bowenLayer.push(...drawBowen(nA.mesh.position.clone(),nB.mesh.position.clone(),b.type));
+  });
+}
+
+// ════════════════════════════════════════════════════
+// MULTI-TOGGLE LAYER SYSTEM
+// ════════════════════════════════════════════════════
+function toggleLayer(name) {
+  if (name==='timeline') { toggleTimeline(); return; }
+  if (name==='symb') { toggleSymbLayer(); return; }
+  activeLayers[name] = !activeLayers[name];
+  const btn = document.getElementById('btn-'+name);
+  if (btn) btn.classList.toggle('active', activeLayers[name]);
+  applyLayers();
+}
+
+function applyLayers() {
+  const showGen   = activeLayers.genogram || activeLayers.bowen;
+  const showBowen = activeLayers.bowen;
+  const showEco   = activeLayers.eco;
+  genLayer.forEach(o => {
+    o.visible = showGen && meetsDepth(o._minGen||1);
+  });
+  bowenLayer.forEach(o => { o.visible = showBowen; });
+  ecoMeshes.forEach(m => {
+    m.visible = showEco;
+    const entry=nodeMap[m._ecoData.id];
+    if (entry) entry.label.style.display = showEco?'block':'none';
+  });
+  ecoLayer.forEach(o => { o.visible = showEco; });
+  PEOPLE.forEach(d => {
+    const e=nodeMap[d.id];
+    if (e) e.label.style.display = e.mesh.visible?'block':'none';
+  });
+}
+
+function meetsDepth(minGen) {
+  if (currentDepth===1) return minGen>=2;
+  return true;
+}
+
+// ════════════════════════════════════════════════════
+// DEPTH SYSTEM
+// ════════════════════════════════════════════════════
+function setDepth(d) {
+  currentDepth=d;
+  document.querySelectorAll('.depth-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.depth)===d);
+  });
+  applyDepth(d);
+}
+function applyDepth(d) {
+  PEOPLE.forEach(p => {
+    const e=nodeMap[p.id]; if (!e) return;
+    const vis=(d===1)?p.gen>=2:true;
+    e.mesh.visible=vis;
+    e.label.style.display=vis?'block':'none';
+  });
+  genLayer.forEach(o => {
+    const showLayer=activeLayers.genogram||activeLayers.bowen;
+    o.visible=showLayer&&meetsDepth(o._minGen||1);
+  });
+  if (activeLayers.eco) {
+    ecoMeshes.forEach(m=>{ m.visible=true; });
+    ecoLayer.forEach(o=>{ o.visible=true; });
+  } else {
+    ecoMeshes.forEach(m=>{ m.visible=false; });
+    ecoLayer.forEach(o=>{ o.visible=false; });
+  }
+}
+
+function toggleTimeline() {
+  const tl=document.getElementById('tl');
+  const btn=document.getElementById('btn-timeline');
+  const blCard=document.getElementById('bl-card');
+  const on=tl.classList.toggle('show');
+  btn.classList.toggle('active',on);
+  // bl-card sempre acima da timeline (74px); afasta mais quando visível para folga visual
+  if (blCard) blCard.style.bottom = on ? '90px' : '22px';
+}
+
+function toggleSymbLayer() {
+  const btn=document.getElementById('btn-symb');
+  const blcSymb=document.getElementById('blc-symb');
+  const blCard=document.getElementById('bl-card');
+  const on=blcSymb.classList.toggle('open');
+  btn.classList.toggle('active',on);
+  // Also expand the bl-card if collapsed
+  if (on && blCard.classList.contains('collapsed')) {
+    blCard.classList.remove('collapsed');
+  }
+}
+
+// ════════════════════════════════════════════════════
+// ANIMATION
+// ════════════════════════════════════════════════════
+function animate() {
+  aniId=requestAnimationFrame(animate);
+  const t=clock.getElapsedTime();
+  PEOPLE.forEach(d => {
+    const e=nodeMap[d.id]; if (!e||d.deceased) return;
+    e.mesh.position.y=d.y+Math.sin(t*.8+e.mesh._floatOff)*.12;
+  });
+  ECO_NODES.forEach(d => {
+    const e=nodeMap[d.id]; if (!e) return;
+    e.mesh.position.y=d.y+Math.sin(t*.6+e.mesh._floatOff)*.1;
+    e.mesh.rotation.y=t*.4;
+  });
+  // Float extended nodes
+  Object.values(extNodeMap).forEach(({mesh,data}) => {
+    if (!mesh.visible||!data) return;
+    mesh.position.y = data.y + Math.sin(t*.6+mesh._floatOff)*.09;
+  });
+  controls.update();
+  renderer.render(scene,camera);
+  updateLabels();
+  updateExtClusterLabels();
+}
+
+function updateLabels() {
+  const cvRect=renderer.domElement.getBoundingClientRect();
+  const W=cvRect.width, H=cvRect.height;
+  // Main nodes
+  Object.values(nodeMap).forEach(({mesh,label}) => {
+    if (!label) return;
+    if (!mesh.visible) { label.style.display='none'; return; }
+    const pos3=mesh.position.clone(); pos3.y-=1.3;
+    const proj=pos3.project(camera);
+    if (proj.z>1) { label.style.display='none'; return; }
+    const sx=((proj.x+1)/2)*W+cvRect.left;
+    const sy=((-proj.y+1)/2)*H+cvRect.top;
+    label.style.display='block';
+    label.style.left=sx+'px'; label.style.top=sy+'px';
+  });
+  // Extended nodes
+  Object.values(extNodeMap).forEach(({mesh,label}) => {
+    if (!label) return;
+    if (!mesh.visible) { label.style.display='none'; return; }
+    const pos3=mesh.position.clone(); pos3.y-=1.1;
+    const proj=pos3.project(camera);
+    if (proj.z>1) { label.style.display='none'; return; }
+    const sx=((proj.x+1)/2)*W+cvRect.left;
+    const sy=((-proj.y+1)/2)*H+cvRect.top;
+    label.style.display='block';
+    label.style.left=sx+'px'; label.style.top=sy+'px';
+  });
+}
+
+// ════════════════════════════════════════════════════
+// RAYCASTING
+// ════════════════════════════════════════════════════
+function visibleMeshes() {
+  const main=Object.values(nodeMap).filter(e=>e.mesh.visible).map(e=>e.mesh);
+  const ext=Object.values(extNodeMap).filter(e=>e.mesh.visible).map(e=>e.mesh);
+  return [...main,...ext];
+}
+function intersectedNode(ev) {
+  const rect=renderer.domElement.getBoundingClientRect();
+  mouse.x=((ev.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=((ev.clientY-rect.top)/rect.height)*-2+1;
+  raycaster.setFromCamera(mouse,camera);
+  const hits=raycaster.intersectObjects(visibleMeshes(),true);
+  if (!hits.length) return null;
+  let obj=hits[0].object;
+  while (obj&&!obj.userData.nodeId&&!obj.userData.ecoId&&!obj.userData.extId) obj=obj.parent;
+  if (!obj) return null;
+  if (obj.userData.nodeId||obj.userData.ecoId)
+    return nodeMap[obj.userData.nodeId||obj.userData.ecoId]||null;
+  if (obj.userData.extId)
+    return extNodeMap[obj.userData.extId]||null;
+  return null;
+}
+function onCanvasClick(ev) {
+  const entry=intersectedNode(ev);
+  if (entry) showInfo(entry.data);
+}
+let hoverId=null;
+function onCanvasHover(ev) {
+  const entry=intersectedNode(ev);
+  const tip=document.getElementById('tooltip');
+  if (entry) {
+    const d=entry.data;
+    const yrs=d.birth?(d.death?`${d.birth}–${d.death}`:`n. ${d.birth}`):'';
+    const isExt=!!entry.personId; // extNodeMap entries have personId
+    const prefix=isExt?(d.isShadow?'[foco] ':'[ext] '):'';
+    tip.textContent=prefix+d.name+(yrs?`  (${yrs})`:'')+( d.role?`  · ${d.role}`:'');
+    tip.style.left=(ev.clientX+14)+'px'; tip.style.top=(ev.clientY-22)+'px';
+    tip.classList.add('on');
+    renderer.domElement.style.cursor='pointer';
+    hoverId=d.id;
+  } else {
+    tip.classList.remove('on');
+    renderer.domElement.style.cursor='default';
+    hoverId=null;
+  }
+}
+
+// ════════════════════════════════════════════════════
+// INFO PANEL
+// ════════════════════════════════════════════════════
+function showInfo(d) {
+  currentInfoId = d.id;
+  const avatarIcons  ={M:'■',F:'●',T:'◆'};
+  const avatarColors ={M:'rgba(37,99,235,.28)',F:'rgba(225,29,122,.28)',T:'rgba(124,58,237,.28)'};
+  const ia=document.getElementById('ia');
+  ia.textContent=avatarIcons[d.gender]||'●';
+  ia.style.background=d.focus?'rgba(6,214,160,.22)':(avatarColors[d.gender]||'rgba(6,214,160,.22)');
+  document.getElementById('iname').textContent=d.name||'Desconhecido';
+  document.getElementById('irole').textContent=d.role||(d.isEco?'Serviço / rede':'');
+  const ibadges=document.getElementById('ibadges'); ibadges.innerHTML='';
+  const addBadge=(cls,txt)=>{ const s=document.createElement('span'); s.className='badge '+cls; s.textContent=txt; ibadges.appendChild(s); };
+  if (d.gen) addBadge('badge-gen','G'+d.gen);
+  if (d.birth) { const yr=new Date().getFullYear(); addBadge('badge-age',d.death?`${d.death-d.birth} anos de vida`:`${yr-d.birth} anos`); }
+  if (d.deceased) addBadge('badge-dec',`† ${d.death||''}`);
+  if (d.focus) addBadge('badge-foco','Pessoa foco');
+  // Bowen
+  const bs=BOWEN_DATA[d.id]||null;
+  document.getElementById('bscore').textContent=bs?bs.score:'—';
+  document.getElementById('blbl').textContent=bs?bs.lbl:'Sem dados Bowen';
+  // Alerts
+  const ial=document.getElementById('ialerts'); ial.innerHTML='';
+  const alerts=ALERT_DATA[d.id]||[];
+  if (!alerts.length) {
+    ial.innerHTML='<div style="font-size:11px;color:var(--dim2)">Nenhum alerta identificado</div>';
+  } else {
+    alerts.forEach(a=>{ const div=document.createElement('div'); div.className='alert-item'; div.textContent='⚠ '+a; ial.appendChild(div); });
+  }
+  // Evolução clínica
+  renderEvolucao(d.id);
+  // Família conectada
+  renderFamConnections(d.id);
+  // Extended genogram button state
+  const iaExt=document.getElementById('ia-ext-gen');
+  if (iaExt) {
+    const eg=EXTENDED_GENOGRAMS[d.id];
+    if (eg&&eg.nodes.length>0) {
+      iaExt.style.display='block';
+      iaExt.textContent = expandedGenograms.has(d.id)
+        ? '⊖ Colapsar genograma desta pessoa'
+        : '⊕ Expandir genograma desta pessoa';
+    } else {
+      iaExt.style.display='none';
+    }
+  }
+  // Open panel — always stays open until X is pressed
+  document.getElementById('info').classList.add('open');
+}
+function closeInfo() {
+  document.getElementById('info').classList.remove('open');
+  currentInfoId=null;
+}
+
+// ════════════════════════════════════════════════════
+// FAMÍLIA CONECTADA (info panel)
+// ════════════════════════════════════════════════════
+const GENDER_COL = {M:'#2563eb', F:'#e11d7a', T:'#7c3aed'};
+
+function renderFamConnections(personId) {
+  const container=document.getElementById('if-fam-list');
+  if (!container) return;
+  container.innerHTML='';
+  const connected=[];
+  const seen=new Set();
+  // Parents & children via filiação
+  BONDS.forEach(b => {
+    if (b.type!=='filiacao') return;
+    if (b.child===personId) {
+      (b.parents||[]).forEach(pid => {
+        if (!seen.has(pid)) { seen.add(pid); const p=PEOPLE.find(x=>x.id===pid); if(p) connected.push({person:p,rel:'Pai/Mãe'}); }
+      });
+    } else if ((b.parents||[]).includes(personId)) {
+      if (!seen.has(b.child)) { seen.add(b.child); const c=PEOPLE.find(x=>x.id===b.child); if(c) connected.push({person:c,rel:c.gender==='M'?'Filho':'Filha'}); }
+    }
+  });
+  // Cônjuge / separação
+  BONDS.forEach(b => {
+    if (b.type!=='casamento'&&b.type!=='separacao') return;
+    const other=(b.a===personId)?b.b:(b.b===personId)?b.a:null;
+    if (other&&!seen.has(other)) {
+      seen.add(other);
+      const p=PEOPLE.find(x=>x.id===other);
+      if (p) connected.push({person:p,rel:b.type==='casamento'?'Cônjuge':'Ex-cônjuge'});
+    }
+  });
+  // Siblings (share at least one parent)
+  const myParents=BONDS.filter(b=>b.type==='filiacao'&&b.child===personId).flatMap(b=>b.parents||[]);
+  if (myParents.length) {
+    PEOPLE.forEach(p => {
+      if (p.id===personId||seen.has(p.id)) return;
+      const pParents=BONDS.filter(b=>b.type==='filiacao'&&b.child===p.id).flatMap(b=>b.parents||[]);
+      if (pParents.some(pp=>myParents.includes(pp))) {
+        seen.add(p.id);
+        connected.push({person:p,rel:p.gender==='M'?'Irmão':'Irmã'});
+      }
+    });
+  }
+  if (!connected.length) {
+    container.innerHTML='<div style="font-size:11px;color:var(--dim2);padding:2px 0">Sem conexões diretas mapeadas.</div>';
+    return;
+  }
+  connected.forEach(({person,rel}) => {
+    const col=GENDER_COL[person.gender]||'#6b7280';
+    const div=document.createElement('div'); div.className='if-fam-item';
+    div.innerHTML=`
+      <span class="if-fam-dot" style="background:${col}"></span>
+      <div class="if-fam-info">
+        <div class="if-fam-name">${person.name}</div>
+        <div class="if-fam-role">${rel}${person.role&&person.role!==rel?' · '+person.role:''}</div>
+      </div>
+      <button class="if-fam-goto" onclick="expandPerson('${person.id}')">ir para ↗</button>`;
+    container.appendChild(div);
+  });
+}
+
+// ════════════════════════════════════════════════════
+// EVOLUÇÃO CLÍNICA
+// ════════════════════════════════════════════════════
+function renderEvolucao(personId) {
+  const list=document.getElementById('ev-list'); list.innerHTML='';
+  const entries=(EVOLUCAO[personId]||[]).slice().reverse();
+  if (!entries.length) {
+    list.innerHTML='<div style="font-size:11px;color:var(--dim2);padding:2px 0">Sem registros de evolução clínica.</div>';
+    return;
+  }
+  entries.forEach(ev => {
+    const div=document.createElement('div'); div.className='ev-entry';
+    div.innerHTML=`
+      <div class="ev-meta">
+        <span class="ev-date">${ev.date}</span>
+        <span class="ev-author">${ev.author}</span>
+      </div>
+      <div class="ev-text">${ev.text}</div>`;
+    list.appendChild(div);
+  });
+}
+function toggleEvForm() {
+  document.getElementById('ev-form').classList.toggle('open');
+}
+function saveEv() {
+  const text=document.getElementById('ev-input').value.trim();
+  if (!text||!currentInfoId) return;
+  if (!EVOLUCAO[currentInfoId]) EVOLUCAO[currentInfoId]=[];
+  const today=new Date().toISOString().slice(0,10);
+  EVOLUCAO[currentInfoId].push({date:today, author:'Dr. Rodrigo', text});
+  renderEvolucao(currentInfoId);
+  document.getElementById('ev-input').value='';
+  document.getElementById('ev-form').classList.remove('open');
+}
+
+// ════════════════════════════════════════════════════
+// EXPAND PERSON / NAVIGATION
+// ════════════════════════════════════════════════════
+let prevNavId = null;
+let prevCamPos = null;
+let prevCamTarget = null;
+
+function expandPerson(id) {
+  const entry=nodeMap[id]; if (!entry) return;
+  // Save current camera state for "back"
+  prevNavId=currentInfoId;
+  prevCamPos=camera.position.clone();
+  prevCamTarget=controls.target.clone();
+  // Fly camera to this person
+  const pos=entry.mesh.position;
+  controls.target.set(pos.x, pos.y, pos.z);
+  camera.position.set(pos.x, pos.y+6, pos.z+18);
+  controls.update();
+  // Open their info panel
+  showInfo(entry.data);
+  // Show back button
+  const btn=document.getElementById('back-btn');
+  if (btn) { btn.innerHTML='← Voltar'; btn.classList.add('show'); }
+}
+
+function goBack() {
+  // Restore camera
+  if (prevCamPos&&prevCamTarget) {
+    camera.position.copy(prevCamPos);
+    controls.target.copy(prevCamTarget);
+    controls.update();
+  }
+  // Restore previous person's info
+  if (prevNavId&&nodeMap[prevNavId]) {
+    showInfo(nodeMap[prevNavId].data);
+  } else {
+    closeInfo();
+  }
+  prevNavId=null; prevCamPos=null; prevCamTarget=null;
+  // Hide back button
+  const btn=document.getElementById('back-btn');
+  if (btn) btn.classList.remove('show');
+}
+
+// ════════════════════════════════════════════════════
+// BL-CARD FAMÍLIA LIST
+// ════════════════════════════════════════════════════
+function populateBlFamList() {
+  const container=document.getElementById('blc-fam-list'); if (!container) return;
+  container.innerHTML='';
+  PEOPLE.forEach(p => {
+    const col=GENDER_COL[p.gender]||'#6b7280';
+    const hasExt = EXTENDED_GENOGRAMS[p.id] && EXTENDED_GENOGRAMS[p.id].nodes.length>0;
+    const div=document.createElement('div'); div.className='fam-item';
+    div.innerHTML=`
+      <span class="fam-dot" style="background:${col}"></span>
+      <div class="fam-info">
+        <div class="fam-iname">${p.name}</div>
+        <div class="fam-irole">${p.role||''}</div>
+      </div>
+      <button class="fam-expand" onclick="expandPerson('${p.id}')">ir ↗</button>
+      ${hasExt?`<button class="fam-gen-btn" data-ext-toggle="${p.id}" onclick="toggleExtGenogram('${p.id}')">⊕</button>`:''}`;
+    container.appendChild(div);
+  });
+  const bbc=document.getElementById('bl-bond-count');
+  if (bbc) bbc.textContent=BONDS.length;
+}
+
+function toggleBlFam() {
+  document.getElementById('blc-fam').classList.toggle('open');
+}
+
+// ════════════════════════════════════════════════════
+// ACCORDION
+// ════════════════════════════════════════════════════
+function toggleAcc(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+// ════════════════════════════════════════════════════
+// BOTTOM-LEFT CARD
+// ════════════════════════════════════════════════════
+function toggleBlCard() {
+  document.getElementById('bl-card').classList.toggle('collapsed');
+}
+function toggleBlSymb() {
+  document.getElementById('blc-symb').classList.toggle('open');
+  const btn=document.getElementById('btn-symb');
+  const isOpen=document.getElementById('blc-symb').classList.contains('open');
+  if (btn) btn.classList.toggle('active',isOpen);
+}
+function updateStats() {
+  const nodes=Object.values(nodeMap).filter(e=>!e.data.isEco).length;
+  const bonds=BONDS.length;
+  const nn=document.getElementById('bl-nodes');
+  const nb=document.getElementById('bl-bonds');
+  if (nn) nn.textContent=nodes;
+  if (nb) nb.textContent=bonds;
+  // Update focus person display
+  const focusPerson=PEOPLE.find(p=>p.focus);
+  const fnEl=document.getElementById('blc-focus-name');
+  const frEl=document.getElementById('blc-focus-role');
+  if(fnEl) fnEl.textContent=focusPerson?focusPerson.name:'—';
+  if(frEl) frEl.textContent=focusPerson?('Pessoa foco · G'+(focusPerson.gen||3)):'Nenhuma pessoa foco';
+}
+
+// ════════════════════════════════════════════════════
+// EXTENDED GENOGRAMS ENGINE — Galáxia Estelar
+// ════════════════════════════════════════════════════
+function buildExtNodeMesh(n, accentCol) {
+  const scale = n.isShadow ? 0.65 : 0.72;
+  let geom;
+  if (n.gender==='M') geom=new THREE.BoxGeometry(1.4*scale,1.4*scale,1.4*scale);
+  else if (n.gender==='F') geom=new THREE.SphereGeometry(0.82*scale,16,16);
+  else geom=new THREE.OctahedronGeometry(0.92*scale);
+
+  let mat;
+  if (n.isShadow) {
+    mat = new THREE.MeshPhysicalMaterial({
+      color:accentCol, wireframe:false, transparent:true, opacity:0.28,
+      emissive:accentCol, emissiveIntensity:0.4
+    });
+  } else if (n.deceased) {
+    mat = new THREE.MeshPhysicalMaterial({
+      color:accentCol, wireframe:true, transparent:true, opacity:0.5
+    });
+  } else {
+    mat = new THREE.MeshPhysicalMaterial({
+      color:accentCol, metalness:0.3, roughness:0.4,
+      transparent:true, opacity:0.82,
+      emissive:accentCol, emissiveIntensity:0.08
+    });
+  }
+  const mesh = new THREE.Mesh(geom, mat);
+  mesh.position.set(n.x, n.y, n.z||0);
+  mesh._baseY = n.y; mesh._floatOff = Math.random()*Math.PI*2;
+  mesh.userData.extId = n.id;
+  mesh.visible = false;
+  return mesh;
+}
+
+function buildExtLabel(id, name, hex) {
+  const div = document.createElement('div');
+  div.className = 'nd-label';
+  div.textContent = name;
+  div.dataset.lid = id;
+  div.style.color = hex;
+  div.style.display = 'none';
+  document.body.appendChild(div);
+  return div;
+}
+
+function drawExtTube(pa, pb, color) {
+  const geo = new THREE.TubeGeometry(new THREE.LineCurve3(pa.clone(),pb.clone()),1,0.045,6,false);
+  const mat = new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.55});
+  const m = new THREE.Mesh(geo,mat); m.visible=false; scene.add(m); return m;
+}
+
+function drawExtArcTube(pa, mid, pb, color) {
+  const geo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3([pa.clone(),mid.clone(),pb.clone()]),14,0.04,6,false);
+  const mat = new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.45});
+  const m = new THREE.Mesh(geo,mat); m.visible=false; scene.add(m); return m;
+}
+
+function initExtGenograms() {
+  Object.entries(EXTENDED_GENOGRAMS).forEach(([pid, eg]) => {
+    if (!extBondCache[pid]) extBondCache[pid]=[];
+    const z = eg.zOff;
+    const col = eg.color;
+    // Build nodes
+    eg.nodes.forEach(n => {
+      // Apply zOff to each node (nodes in data have x,y only; z comes from eg.zOff)
+      const nd = {...n, z:z};
+      const mesh = buildExtNodeMesh({...nd}, col);
+      scene.add(mesh);
+      const label = buildExtLabel(n.id, n.name, eg.hex);
+      extNodeMap[n.id] = {mesh, label, personId:pid, data:nd};
+    });
+
+    // Build bonds within extended genogram
+    const extPositions = {};
+    eg.nodes.forEach(n => {
+      const entry = extNodeMap[n.id];
+      if (entry) extPositions[n.id] = entry.mesh.position.clone();
+    });
+
+    const marriageMidsExt = {};
+    eg.bonds.forEach(b => {
+      if (b.type!=='casamento') return;
+      const pA=extPositions[b.a], pB=extPositions[b.b]; if (!pA||!pB) return;
+      const mid = new THREE.Vector3().addVectors(pA,pB).multiplyScalar(.5);
+      marriageMidsExt[[b.a,b.b].sort().join('|')] = mid;
+      // Draw two parallel lines
+      const dir = new THREE.Vector3().subVectors(pB,pA).normalize();
+      let perp = new THREE.Vector3().crossVectors(dir,new THREE.Vector3(0,0,1)).normalize().multiplyScalar(.13);
+      if (perp.lengthSq()<.001) perp=new THREE.Vector3(0,.13,0);
+      [1,-1].forEach(s => {
+        const off = perp.clone().multiplyScalar(s);
+        const t=drawExtTube(pA.clone().add(off), pB.clone().add(off), col);
+        extBondCache[pid].push(t);
+      });
+    });
+
+    eg.bonds.forEach(b => {
+      if (b.type!=='filiacao') return;
+      const children = [b.child].filter(Boolean);
+      const parents = b.parents||[];
+      let parentMid;
+      if (parents.length>=2) {
+        const key=[...parents].sort().join('|');
+        parentMid = marriageMidsExt[key];
+        if (!parentMid) {
+          const pA=extPositions[parents[0]], pB=extPositions[parents[1]];
+          if (pA&&pB) parentMid=new THREE.Vector3().addVectors(pA,pB).multiplyScalar(.5);
+        }
+      } else if (parents.length===1) {
+        parentMid = extPositions[parents[0]];
+      }
+      if (!parentMid) return;
+      children.forEach(cid => {
+        const childPos = extPositions[cid]; if (!childPos) return;
+        const cp = new THREE.Vector3(
+          (parentMid.x+childPos.x)/2,
+          (parentMid.y+childPos.y)/2+.4,
+          (parentMid.z+childPos.z)/2
+        );
+        const arc = drawExtArcTube(parentMid, cp, childPos, col);
+        extBondCache[pid].push(arc);
+      });
+    });
+
+    // Anchor arc: from main node (z=0) to shadow node at zOff
+    const mainEntry = nodeMap[pid];
+    const shadowEntry = eg.nodes.find(n=>n.isShadow);
+    if (mainEntry && shadowEntry && Math.abs(z)>0.5) {
+      const mainPos = mainEntry.mesh.position.clone();
+      const extPos = extNodeMap[shadowEntry.id]?.mesh.position.clone();
+      if (extPos) {
+        const midAnchor = new THREE.Vector3(
+          (mainPos.x+extPos.x)/2,
+          (mainPos.y+extPos.y)/2 + 3,
+          (mainPos.z+extPos.z)/2
+        );
+        const anchor = drawExtArcTube(mainPos, midAnchor, extPos, col);
+        anchor.material.opacity = 0.25;
+        extBondCache[pid].push(anchor);
+      }
+    }
+
+    // Cluster label for each extended genogram
+    const clusterLabel = document.createElement('div');
+    clusterLabel.className = 'ext-cluster-label';
+    clusterLabel.textContent = eg.title;
+    clusterLabel.style.color = eg.hex;
+    clusterLabel.style.background = `${eg.hex}1a`;
+    clusterLabel.style.border = `1px solid ${eg.hex}44`;
+    clusterLabel.style.display = 'none';
+    clusterLabel.dataset.extCluster = pid;
+    document.body.appendChild(clusterLabel);
+  });
+}
+
+function toggleExtGenogram(pid) {
+  if (!pid||!EXTENDED_GENOGRAMS[pid]) return;
+  const eg = EXTENDED_GENOGRAMS[pid];
+  const isActive = expandedGenograms.has(pid);
+
+  if (isActive) {
+    // Hide
+    expandedGenograms.delete(pid);
+    eg.nodes.forEach(n => {
+      const entry=extNodeMap[n.id]; if (!entry) return;
+      entry.mesh.visible=false; entry.label.style.display='none';
+    });
+    (extBondCache[pid]||[]).forEach(m=>{ m.visible=false; });
+    // Hide cluster label
+    const cl=document.querySelector(`[data-ext-cluster="${pid}"]`);
+    if (cl) cl.style.display='none';
+  } else {
+    // Show
+    expandedGenograms.add(pid);
+    eg.nodes.forEach(n => {
+      const entry=extNodeMap[n.id]; if (!entry) return;
+      entry.mesh.visible=true; entry.label.style.display='block';
+    });
+    (extBondCache[pid]||[]).forEach(m=>{ m.visible=true; });
+    // Show cluster label
+    const cl=document.querySelector(`[data-ext-cluster="${pid}"]`);
+    if (cl) cl.style.display='block';
+  }
+  updateExtBadge();
+  updateExtGenToggleButtons(pid);
+  // Update info panel button text
+  const iaBtn=document.getElementById('ia-ext-gen');
+  if (iaBtn&&currentInfoId===pid) {
+    iaBtn.textContent = expandedGenograms.has(pid)
+      ? '⊖ Colapsar genograma desta pessoa'
+      : '⊕ Expandir genograma desta pessoa';
+  }
+}
+
+function updateExtBadge() {
+  const badge=document.getElementById('ext-badge'); if (!badge) return;
+  const n=expandedGenograms.size;
+  if (n===0) { badge.style.display='none'; }
+  else { badge.style.display='inline-block'; badge.textContent=`⊕ ${n} genograma${n>1?'s':''} ativo${n>1?'s':''}`; }
+}
+
+function updateExtGenToggleButtons(pid) {
+  const btn=document.querySelector(`[data-ext-toggle="${pid}"]`);
+  if (!btn) return;
+  const on=expandedGenograms.has(pid);
+  btn.classList.toggle('active',on);
+  btn.textContent=on?'⊖':'⊕';
+}
+
+function updateExtClusterLabels() {
+  const cvRect=renderer.domElement.getBoundingClientRect();
+  const W=cvRect.width, H=cvRect.height;
+  expandedGenograms.forEach(pid => {
+    const eg=EXTENDED_GENOGRAMS[pid];
+    if (!eg||!eg.nodes.length) return;
+    const cl=document.querySelector(`[data-ext-cluster="${pid}"]`);
+    if (!cl) return;
+    // Find centroid of visible ext nodes
+    let sx=0,sy=0,sz=0,cnt=0;
+    eg.nodes.forEach(n => {
+      const entry=extNodeMap[n.id]; if (!entry||!entry.mesh.visible) return;
+      sx+=entry.mesh.position.x; sy+=entry.mesh.position.y; sz+=entry.mesh.position.z; cnt++;
+    });
+    if (!cnt) { cl.style.display='none'; return; }
+    const centroid=new THREE.Vector3(sx/cnt,sy/cnt+2.5,sz/cnt);
+    const proj=centroid.project(camera);
+    if (proj.z>1) { cl.style.display='none'; return; }
+    const px=((proj.x+1)/2)*W+cvRect.left;
+    const py=((-proj.y+1)/2)*H+cvRect.top;
+    cl.style.left=px+'px'; cl.style.top=py+'px'; cl.style.display='block';
+  });
+}
+
+// ════════════════════════════════════════════════════
+// TIMELINE
+// ════════════════════════════════════════════════════
+function buildTimeline() {
+  const c=document.getElementById('tl-events'); c.innerHTML='';
+  TL_EVENTS.sort((a,b)=>a.year-b.year).forEach(ev => {
+    const div=document.createElement('div'); div.className='tl-event';
+    div.innerHTML=`<div class="tl-year">${ev.year}</div><div class="tl-dot"></div><div class="tl-lbl">${ev.label}</div>`;
+    c.appendChild(div);
+  });
+}
+
+// ════════════════════════════════════════════════════
+// ADD PERSON
+// ════════════════════════════════════════════════════
+const REL_POS = {
+  'Pai':         {x:-2, y:2,   z:0,gen:2},
+  'Mãe':         {x:2,  y:2,   z:0,gen:2},
+  'Cônjuge':     {x:3.5,y:-5,  z:0,gen:3},
+  'Filho/a':     {x:2,  y:-11, z:0,gen:4},
+  'Irmão':       {x:-8, y:-5,  z:0,gen:3},
+  'Irmã':        {x:8,  y:-5,  z:0,gen:3},
+  'Avô paterno': {x:-10,y:9,   z:0,gen:1},
+  'Avó paterna': {x:-8, y:9,   z:0,gen:1},
+  'Avô materno': {x:10, y:9,   z:0,gen:1},
+  'Avó materna': {x:12, y:9,   z:0,gen:1},
+  'Neto/a':      {x:4,  y:-16, z:0,gen:5},
+  'Outro':       {x:0,  y:0,   z:3,gen:3},
+};
+// ── Configuração contextual por papel ────────────────────────────────────────
+const REL_BIRTH_LBL = {
+  'Pai':         'Ano de nascimento do pai',
+  'Mãe':         'Ano de nascimento da mãe',
+  'Cônjuge':     'Ano de nascimento do cônjuge',
+  'Filho/a':     'Ano de nascimento',
+  'Irmão':       'Ano de nascimento do irmão',
+  'Irmã':        'Ano de nascimento da irmã',
+  'Avô paterno': 'Ano de nascimento do avô paterno',
+  'Avó paterna': 'Ano de nascimento da avó paterna',
+  'Avô materno': 'Ano de nascimento do avô materno',
+  'Avó materna': 'Ano de nascimento da avó materna',
+  'Neto/a':      'Ano de nascimento',
+  'Outro':       'Ano de nascimento (ou início da relação)',
+};
+const REL_CTX = {
+  'Cônjuge': { lbl:'Ano de união / casamento', tlFn:(name) => `União: ${name}` },
+  'Outro':   { lbl:'Ano de início da relação', tlFn:(name) => `Relação: ${name}` },
+};
+function onRelChange(rel) {
+  const birthLbl = document.getElementById('add-birth-lbl');
+  const ctxWrap  = document.getElementById('add-ctx-wrap');
+  const ctxLbl   = document.getElementById('add-ctx-lbl');
+  if (birthLbl) birthLbl.firstChild.textContent = (REL_BIRTH_LBL[rel] || 'Ano de nascimento') + ' ';
+  const ctx = REL_CTX[rel];
+  if (ctx) {
+    ctxLbl.textContent = ctx.lbl;
+    ctxWrap.removeAttribute('hidden');
+  } else {
+    ctxWrap.setAttribute('hidden','');
+    document.getElementById('add-ctx-year').value = '';
+  }
+}
+function openAddModal() {
+  refreshPartnerSelect(); refreshBondSelects();
+  const rel = document.getElementById('add-rel').value;
+  onRelChange(rel);
+  document.getElementById('add-modal').removeAttribute('hidden');
+}
+
+function openServiceModal() {
+  const sel = document.getElementById('svc-person');
+  sel.innerHTML = '<option value="">— nenhum (posicionar livre) —</option>';
+  PEOPLE.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p.id; o.textContent = p.name + (p.focus ? ' ⊙' : '');
+    sel.appendChild(o);
+  });
+  // Pre-select focus person if exists
+  const focusPerson = PEOPLE.find(p => p.focus);
+  if (focusPerson) sel.value = focusPerson.id;
+  document.getElementById('service-modal').removeAttribute('hidden');
+}
+function closeServiceModal() { document.getElementById('service-modal').setAttribute('hidden',''); }
+
+function confirmAddService() {
+  const name = document.getElementById('svc-name').value.trim();
+  if (!name) { alert('Informe o nome do serviço.'); return; }
+  const type = document.getElementById('svc-type').value;
+  const strength = document.getElementById('svc-strength').value;
+  const personId = document.getElementById('svc-person').value;
+
+  // Find a free position for the eco node (offset in Z to separate from family)
+  const existingEcoX = ECO_NODES.map(n => n.x);
+  let newX = 0;
+  for (let candidate = -12; candidate <= 12; candidate += 3.5) {
+    if (!existingEcoX.includes(candidate)) { newX = candidate; break; }
+  }
+  const ecoId = 'svc_' + Date.now();
+  const ecoD = { id: ecoId, name, type, x: newX, y: -5, z: 6, strength };
+  ECO_NODES.push(ecoD);
+
+  // Build mesh and add to scene
+  const mesh = buildEcoMesh(ecoD);
+  mesh.visible = true;
+  scene.add(mesh);
+  const label = buildLabel(ecoId, name, false);
+
+  // Draw bond to person if selected
+  if (personId && nodeMap[personId]) {
+    const personData = nodeMap[personId].data;
+    const posA = new THREE.Vector3(personData.x, personData.y, personData.z);
+    const posB = new THREE.Vector3(ecoD.x, ecoD.y, ecoD.z);
+    drawEcoBond(posA, posB, type, strength);
+    ECO_BONDS.push({ from: personId, to: ecoId, type, strength });
+  }
+
+  // Alimentar timeline com ano de início do vínculo
+  const svcStartYear = parseInt(document.getElementById('svc-start-year').value)||null;
+  const svcTypeLabel = {saude:'saúde',assist:'assist. social',educ:'educação',trab:'trabalho',relig:'religião',social:'rede social'};
+  if (svcStartYear) {
+    TL_EVENTS.push({year: svcStartYear, label: `Início vínculo: ${name} (${svcTypeLabel[type]||type})`});
+    buildTimeline();
+  }
+  applyLayers();
+  closeServiceModal();
+  document.getElementById('svc-name').value = '';
+  document.getElementById('svc-start-year').value = '';
+}
+function closeAddModal() { document.getElementById('add-modal').setAttribute('hidden',''); }
+function refreshPartnerSelect() {
+  const sel=document.getElementById('add-partner'); if (!sel) return;
+  sel.innerHTML='<option value="">— nenhum —</option>';
+  PEOPLE.forEach(p=>{ const opt=document.createElement('option'); opt.value=p.id; opt.textContent=p.name; sel.appendChild(opt); });
+}
+function confirmAdd() {
+  const name=document.getElementById('add-name').value.trim();
+  if (!name) { document.getElementById('add-name').focus(); return; }
+  const gender=document.getElementById('add-gender').value;
+  const birth=parseInt(document.getElementById('add-birth').value)||null;
+  const deceased=document.getElementById('add-dec').value==='1';
+  const rel=document.getElementById('add-rel').value;
+  const genSel=parseInt(document.getElementById('add-gen').value)||3;
+  const isFocus=document.getElementById('add-focus').checked;
+  const partner=document.getElementById('add-partner').value;
+  // Auto-position: Y by gen, X spread among existing gen members
+  const GEN_Y={1:9,2:2,3:-5,4:-11,5:-17};
+  const y=GEN_Y[genSel]??(-5);
+  const sameGen=PEOPLE.filter(p=>p.gen===genSel);
+  const x= sameGen.length===0 ? 0 : (sameGen[sameGen.length-1].x + 3.5);
+  const z=0;
+  // If set as focus, demote previous focus. If no focus exists yet, auto-assign.
+  const autoFocus = PEOPLE.length===0 || isFocus;
+  if (autoFocus) { PEOPLE.forEach(p=>{ if(p.focus){p.focus=false; if(nodeMap[p.id]) nodeMap[p.id].mesh.userData.isFocus=false;} }); }
+  const d={id:'p_'+(nextId++),name,gender,birth,deceased,role:rel,gen:genSel,x,y,z,focus:autoFocus};
+  PEOPLE.push(d);
+  const mesh=buildNodeMesh(d); scene.add(mesh);
+  const label=buildLabel(d.id,d.name,isFocus);
+  nodeMap[d.id]={mesh,data:d,label};
+  if (partner&&nodeMap[partner]) {
+    const partnerPos=nodeMap[partner].mesh.position.clone();
+    const newPos=new THREE.Vector3(d.x,d.y,d.z);
+    const minGen=Math.min(d.gen,nodeMap[partner].data.gen);
+    const {objs}=drawMarriage(partnerPos,newPos,false,minGen);
+    genLayer.push(...objs); buildGenByMinGen(minGen,objs);
+    BONDS.push({type:'casamento',a:partner,b:d.id});
+  }
+  // ── Alimentar timeline ────────────────────────────────────────────────────
+  if (birth) {
+    const birthLabel = {
+      'Pai':'pai','Mãe':'mãe','Cônjuge':'cônjuge',
+      'Irmão':'irmão','Irmã':'irmã',
+      'Avô paterno':'avô pat.','Avó paterna':'avó pat.',
+      'Avô materno':'avô mat.','Avó materna':'avó mat.',
+    };
+    const suffix = birthLabel[rel] ? ` (${birthLabel[rel]})` : '';
+    TL_EVENTS.push({year: birth, label: `Nasc. ${name}${suffix}`});
+  }
+  const ctxYear = parseInt(document.getElementById('add-ctx-year').value)||null;
+  if (ctxYear && REL_CTX[rel]) {
+    TL_EVENTS.push({year: ctxYear, label: REL_CTX[rel].tlFn(name)});
+  }
+  buildTimeline();
+  // ─────────────────────────────────────────────────────────────────────────
+  applyDepth(currentDepth); applyLayers();
+  refreshPartnerSelect(); refreshBondSelects(); closeAddModal(); showInfo(d);
+  updateStats(); populateBlFamList();
+  document.getElementById('add-name').value='';
+  document.getElementById('add-ctx-year').value='';
+  document.getElementById('add-birth').value='';
+  document.getElementById('add-focus').checked=false;
+}
+
+// ════════════════════════════════════════════════════
+// SEARCH
+// ════════════════════════════════════════════════════
+function doSearch(q) {
+  const lq=q.toLowerCase().trim();
+  Object.values(nodeMap).forEach(({data,label}) => {
+    if (!label) return;
+    const match=lq&&data.name&&data.name.toLowerCase().includes(lq);
+    label.classList.toggle('highlight',!!match);
+  });
+}
+
+// ════════════════════════════════════════════════════
+// BOND MODAL
+// ════════════════════════════════════════════════════
+function openBondModal() {
+  refreshBondSelects();
+  document.getElementById('bond-modal').removeAttribute('hidden');
+  updateBondUI();
+}
+function closeBondModal(){ document.getElementById('bond-modal').setAttribute('hidden',''); }
+function refreshBondSelects(){
+  ['bond-a','bond-b','bond-parent2'].forEach(sid=>{
+    const el=document.getElementById(sid); if(!el)return;
+    const cur=el.value;
+    el.innerHTML=sid==='bond-parent2'?'<option value="">— nenhum —</option>':'<option value="">— selecione —</option>';
+    PEOPLE.forEach(p=>{
+      const o=document.createElement('option'); o.value=p.id; o.textContent=p.name+(p.gen?' (G'+p.gen+')':'');
+      el.appendChild(o);
+    });
+    if(cur) el.value=cur;
+  });
+}
+function updateBondUI(){
+  const t=document.getElementById('bond-type').value;
+  const isFil=t==='filiacao';
+  const hasSep=t==='separacao';
+  document.getElementById('bond-filiacao-extra').style.display=isFil?'block':'none';
+  document.getElementById('bond-year-lbl').style.display=(hasSep||isFil)?'none':'none';
+  document.getElementById('bond-lbl-mid').textContent=
+    t==='casamento'||t==='separacao'?'↔':t==='filiacao'?'→':'↔';
+}
+document.addEventListener('change',e=>{
+  if(e.target&&e.target.id==='bond-type') updateBondUI();
+});
+function confirmBond(){
+  const type=document.getElementById('bond-type').value;
+  const a=document.getElementById('bond-a').value;
+  const b=document.getElementById('bond-b').value;
+  const p2=document.getElementById('bond-parent2').value;
+  const year=parseInt(document.getElementById('bond-year').value)||undefined;
+  const stEl=document.getElementById('bond-st');
+  if(!a||!b){stEl.textContent='Selecione as duas pessoas.'; return;}
+  if(a===b){stEl.textContent='Selecione pessoas diferentes.'; return;}
+  stEl.textContent='';
+  if(type==='filiacao'){
+    const parents=p2?[a,p2]:[a];
+    const bond={type:'filiacao',parents,child:b};
+    BONDS.push(bond);
+    // Draw arc from parent(s) to child
+    const childPos=nodeMap[b]?.mesh?.position; const parentPos=nodeMap[a]?.mesh?.position;
+    const minG=nodeMap[a]?.data?.gen??2;
+    if(childPos&&parentPos){
+      const arc=drawDirectArc(parentPos,childPos,0x5588aa,minG);
+      genLayer.push(arc); buildGenByMinGen(minG,[arc]);
+    }
+    if(p2&&nodeMap[p2]){
+      const p2Pos=nodeMap[p2].mesh.position; const childP=nodeMap[b]?.mesh?.position;
+      if(p2Pos&&childP){
+        const arc2=drawDirectArc(p2Pos,childP,0x5588aa,nodeMap[p2]?.data?.gen??2);
+        genLayer.push(arc2);
+      }
+    }
+  } else if(type==='casamento'||type==='separacao'){
+    const bond={type,a,b}; if(year) bond.year=year;
+    BONDS.push(bond);
+    const pa=nodeMap[a]?.mesh?.position; const pb=nodeMap[b]?.mesh?.position;
+    if(pa&&pb){
+      const isS=type==='separacao';
+      const minG=Math.min(nodeMap[a]?.data?.gen??2,nodeMap[b]?.data?.gen??2);
+      const {objs}=drawMarriage(pa,pb,isS,minG);
+      genLayer.push(...objs); buildGenByMinGen(minG,objs);
+    }
+  } else {
+    // Bowen
+    const bond={type,a,b}; BONDS.push(bond);
+    const pa=nodeMap[a]?.mesh?.position; const pb=nodeMap[b]?.mesh?.position;
+    if(pa&&pb){
+      const objs=drawBowen(pa,pb,type);
+      bowenLayer.push(...objs);
+    }
+  }
+  applyDepth(currentDepth); applyLayers();
+  updateStats(); populateBlFamList();
+  closeBondModal();
+  const bst=document.getElementById('bond-st'); if(bst)bst.textContent='';
+}
+
+// helper – draw a single tube between two points
+function drawTube(pa,pb,col,rad,opacity){
+  const curve=new THREE.LineCurve3(pa.clone(),pb.clone());
+  const geo=new THREE.TubeGeometry(curve,4,rad,8,false);
+  const mat=new THREE.MeshPhysicalMaterial({color:col,transparent:true,opacity,roughness:.4,metalness:.2});
+  const m=new THREE.Mesh(geo,mat); m.castShadow=false; return m;
+}
+
+// ════════════════════════════════════════════════════
+// NEW GENOGRAM (builder mode)
+// ════════════════════════════════════════════════════
+function startNewGenogram(){
+  // confirm() always returns false in local/artifact environments — skip it
+  document.getElementById('welcome').classList.add('gone');
+  // Clear all scene objects
+  clearSceneObjects();
+  // Reset data
+  PEOPLE.length=0; BONDS.length=0;
+  ECO_NODES.length=0; ECO_BONDS.length=0;
+  Object.keys(EVOLUCAO).forEach(k=>delete EVOLUCAO[k]);
+  TL_EVENTS.length=0; buildTimeline();
+  // Reset maps
+  Object.keys(nodeMap).forEach(k=>delete nodeMap[k]);
+  genLayer.length=0; ecoLayer.length=0; bowenLayer.length=0;
+  genByMinGen={};
+  expandedGenograms.clear();
+  Object.keys(extNodeMap).forEach(k=>delete extNodeMap[k]);
+  Object.keys(extBondCache).forEach(k=>delete extBondCache[k]);
+  currentInfoId=null;
+  // UI
+  document.getElementById('new-gen-banner').classList.add('on');
+  const hint=document.getElementById('hint'); if(hint)hint.classList.add('gone');
+  updateStats(); populateBlFamList();
+  // Show hint to add first person
+  setTimeout(()=>{
+    const banner=document.getElementById('new-gen-banner');
+    const msg=document.createElement('span');
+    msg.textContent=' → Clique em "+ Pessoa" na barra superior para adicionar o primeiro membro.';
+    msg.style.cssText='color:var(--teal);font-size:11px';
+    if(!banner.querySelector('.hint-msg')){msg.className='hint-msg';banner.appendChild(msg);}
+  },400);
+}
+function clearSceneObjects(){
+  // Remove all non-essential scene objects (preserve lights, grid)
+  const toRemove=[];
+  scene.traverse(obj=>{
+    if(obj.isMesh||obj.isLine){
+      // Keep only the ones that are permanent (grid helper etc)
+      if(obj.userData.permanent) return;
+      toRemove.push(obj);
+    }
+  });
+  toRemove.forEach(o=>{ scene.remove(o); if(o.geometry)o.geometry.dispose(); if(o.material)o.material.dispose(); });
+  // Remove DOM labels
+  document.querySelectorAll('.nd-label,.ext-cluster-label').forEach(el=>el.remove());
+}
+
+// ════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════
+function showAuth() { document.getElementById('auth-modal').removeAttribute('hidden'); }
+function closeAuth(){ document.getElementById('auth-modal').setAttribute('hidden',''); }
+function authTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>{ t.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='reg')); });
+  document.getElementById('auth-login').style.display=tab==='login'?'block':'none';
+  document.getElementById('auth-reg').style.display=tab==='reg'?'block':'none';
+}
+function setAuthSt(msg){document.getElementById('auth-st').textContent=msg;}
+async function doLogin() {
+  if (!supa){setAuthSt('Supabase não conectado. Use o modo demonstração.');return;}
+  const email=document.getElementById('au-email').value;
+  const pass=document.getElementById('au-pass').value;
+  setAuthSt('Entrando…');
+  try {
+    const {error}=await supa.auth.signInWithPassword({email,password:pass});
+    if (error){setAuthSt('Erro: '+error.message);return;}
+    document.getElementById('btn-auth').textContent='Minha conta'; closeAuth();
+  } catch(e){
+    setAuthSt('Sem conexão com o servidor. '+_authFallbackMsg());
+  }
+}
+async function doReg() {
+  if (!supa){setAuthSt('Supabase não conectado. Use o modo demonstração.');return;}
+  const email=document.getElementById('au-remail').value;
+  const pass=document.getElementById('au-rpass').value;
+  setAuthSt('Criando conta…');
+  try {
+    const {error}=await supa.auth.signUp({email,password:pass});
+    if (error){setAuthSt('Erro: '+error.message);return;}
+    setAuthSt('✓ Conta criada! Verifique seu e-mail para ativar.');
+  } catch(e){
+    setAuthSt('Sem conexão com o servidor. '+_authFallbackMsg());
+  }
+}
+function _authFallbackMsg(){
+  return 'O ELOS precisa ser servido via HTTPS para autenticar. '+
+    'Em modo local, use o botão "Explorar demo" ou "Construir meu genograma" sem conta.';
+}
+
+// ════════════════════════════════════════════════════
+// VOICE RECORDING
+// ════════════════════════════════════════════════════
+let voiceRecognition = null;
+let voiceTranscriptFull = '';
+let voiceParsed = [];
+
+function toggleVoicePanel() {
+  const p = document.getElementById('voice-panel');
+  p.classList.toggle('on');
+  // Reset mic error on reopen
+  if(p.classList.contains('on')){
+    const errEl=document.getElementById('vp-mic-error');
+    if(errEl) errEl.style.display='none';
+  }
+}
+
+function vpSwitchTab(mode){
+  const voiceDiv=document.getElementById('vp-mode-voice');
+  const textDiv=document.getElementById('vp-mode-text');
+  const tVoice=document.getElementById('vp-tab-voice');
+  const tText=document.getElementById('vp-tab-text');
+  if(mode==='voice'){
+    voiceDiv.style.display=''; textDiv.style.display='none';
+    tVoice.style.background='var(--blue)'; tVoice.style.color='#fff'; tVoice.style.borderColor='var(--blue)';
+    tText.style.background='transparent'; tText.style.color='var(--text-muted)'; tText.style.borderColor='var(--border)';
+  } else {
+    voiceDiv.style.display='none'; textDiv.style.display='';
+    tText.style.background='var(--blue)'; tText.style.color='#fff'; tText.style.borderColor='var(--blue)';
+    tVoice.style.background='transparent'; tVoice.style.color='var(--text-muted)'; tVoice.style.borderColor='var(--border)';
+    document.getElementById('vp-preview').classList.remove('on');
+  }
+}
+
+function voiceBuildFromText(){
+  const txt=document.getElementById('vp-text-input').value.trim();
+  if(!txt) return;
+  voiceTranscriptFull=txt;
+  voiceParsed=parseVoiceTranscript(txt);
+  const list=document.getElementById('vp-preview-list');
+  list.innerHTML='';
+  if(voiceParsed.length===0){
+    const msg=document.createElement('div');
+    msg.style.cssText='color:var(--text-muted);font-size:.78rem;padding:.4rem';
+    msg.textContent='Nenhuma pessoa identificada. Tente: "Meu pai se chama João. Minha mãe é Maria."';
+    list.appendChild(msg);
+    document.getElementById('vp-preview').classList.add('on');
+    return;
+  }
+  voiceParsed.forEach(p=>{
+    const chip=document.createElement('div'); chip.className='vp-chip';
+    chip.textContent=`${p.name} (${p.role})${p.birth?' · '+p.birth:''}`;
+    list.appendChild(chip);
+  });
+  document.getElementById('vp-preview').classList.add('on');
+  // Auto-build immediately for text mode
+  voiceBuild();
+}
+
+function voiceStart() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    document.getElementById('vp-transcript').textContent='Reconhecimento de voz não suportado neste browser. Use Chrome.';
+    return;
+  }
+  voiceRecognition = new SR();
+  voiceRecognition.lang = 'pt-BR';
+  voiceRecognition.continuous = true;
+  voiceRecognition.interimResults = true;
+  voiceTranscriptFull = '';
+  document.getElementById('vp-transcript').innerHTML = '';
+  document.getElementById('vp-dot').className = 'vp-dot rec';
+  document.getElementById('btn-voice').classList.add('rec');
+  document.getElementById('vp-start').style.display='none';
+  document.getElementById('vp-stop').style.display='inline-flex';
+  document.getElementById('vp-build').style.display='none';
+  document.getElementById('vp-preview').classList.remove('on');
+  voiceRecognition.onresult = e => {
+    let interim='', final='';
+    for (let i=e.resultIndex;i<e.results.length;i++) {
+      if(e.results[i].isFinal) final+=e.results[i][0].transcript+' ';
+      else interim+=e.results[i][0].transcript;
+    }
+    voiceTranscriptFull+=final;
+    document.getElementById('vp-transcript').innerHTML =
+      voiceTranscriptFull + (interim?`<span style="color:var(--accent-2);opacity:.7">${interim}</span>`:'');
+  };
+  voiceRecognition.onerror = ev => {
+    voiceRecognition=null;
+    document.getElementById('vp-dot').className='vp-dot idle';
+    document.getElementById('btn-voice').classList.remove('rec');
+    document.getElementById('vp-stop').style.display='none';
+    document.getElementById('vp-start').style.display='inline-flex';
+    if(ev.error==='not-allowed'||ev.error==='permission-denied'){
+      document.getElementById('vp-mic-error').style.display='block';
+      document.getElementById('vp-transcript').innerHTML='<span style="color:var(--dim)">Microfone bloqueado — veja instruções acima ou use a aba ⌨️ Texto.</span>';
+    } else if(ev.error==='no-speech'){
+      document.getElementById('vp-transcript').innerHTML='<span style="color:var(--dim)">Nenhuma fala detectada. Tente novamente.</span>';
+    } else {
+      document.getElementById('vp-transcript').innerHTML='<span style="color:var(--dim)">[Erro: '+ev.error+'] — tente a aba ⌨️ Texto.</span>';
+    }
+  };
+  voiceRecognition.onend = () => {
+    if(voiceRecognition) { voiceRecognition=null; voiceStop(); }
+  };
+  voiceRecognition.start();
+}
+
+function voiceStop() {
+  if(voiceRecognition) { voiceRecognition.stop(); voiceRecognition=null; }
+  document.getElementById('vp-dot').className='vp-dot idle';
+  document.getElementById('btn-voice').classList.remove('rec');
+  document.getElementById('vp-stop').style.display='none';
+  document.getElementById('vp-start').style.display='inline-flex';
+  if(!voiceTranscriptFull.trim()) return;
+  voiceParsed = parseVoiceTranscript(voiceTranscriptFull);
+  const list = document.getElementById('vp-preview-list');
+  list.innerHTML='';
+  voiceParsed.forEach(p=>{
+    const chip=document.createElement('div'); chip.className='vp-chip';
+    chip.textContent=`${p.name} (${p.role})${p.birth?' · '+p.birth:''}`;
+    list.appendChild(chip);
+  });
+  if(voiceParsed.length===0){
+    const msg=document.createElement('div');
+    msg.style.cssText='color:var(--text-muted);font-size:.78rem;padding:.4rem';
+    msg.textContent='Nenhuma pessoa identificada. Tente falar: "Meu pai se chama João, nasceu em 1955."';
+    list.appendChild(msg);
+  }
+  document.getElementById('vp-preview').classList.add('on');
+  if(voiceParsed.length>0) document.getElementById('vp-build').style.display='inline-flex';
+}
+
+function voiceBuild() {
+  if(!voiceParsed.length) return;
+  startNewGenogram();
+
+  // ── Pre-compute counts for multi-person roles ─────────────────────────────
+  const ecoRoles = new Set(['Vizinho/a','Cuidador/a','Amigo/a','Prof. Saúde','Pet']);
+  const siblings   = voiceParsed.filter(p => p.role==='Irmã' || p.role==='Irmão');
+  const children   = voiceParsed.filter(p => p.role==='Filho/a');
+  const grandkids  = voiceParsed.filter(p => p.role==='Neto/a');
+  const uncles     = voiceParsed.filter(p => p.role==='Tio' || p.role==='Tia');
+  const cousins    = voiceParsed.filter(p => p.role==='Primo/a');
+  const ecoNodes   = voiceParsed.filter(p => ecoRoles.has(p.role));
+
+  // ── Fixed single-person role positions ───────────────────────────────────
+  //   Paternal side left, maternal side right — classic genogram convention
+  const FIXED_POS = {
+    'Bisavô':        {x:-9, y:16, z:0},
+    'Bisavó':        {x:-6, y:16, z:0},
+    'Avô Paterno':   {x:-6, y:9,  z:0},
+    'Avó Paterna':   {x:-2.5,y:9, z:0},
+    'Avô Materno':   {x:2.5, y:9, z:0},
+    'Avó Materna':   {x:6,   y:9, z:0},
+    'Pai':           {x:-3,  y:2, z:0},
+    'Mãe':           {x:3,   y:2, z:0},
+    'Pessoa Foco':   {x:0,   y:-5,z:0},
+    'Cônjuge':       {x:6,   y:-5,z:0},
+  };
+
+  const created = {};   // role → data object (single-instance roles)
+  const createdMulti = {}; // role → array of data objects
+
+  function pos3(d){ return new THREE.Vector3(d.x, d.y, d.z); }
+
+  // Position registry: prevent any two nodes sharing the same rounded (x,y,z)
+  const posReg = new Set();
+  function uniqPos(x, y, z) {
+    let zOff = 0;
+    while (posReg.has(`${Math.round(x)}_${Math.round(y)}_${Math.round(z+zOff)}`)) zOff += 2.5;
+    posReg.add(`${Math.round(x)}_${Math.round(y)}_${Math.round(z+zOff)}`);
+    return {x, y, z: z+zOff};
+  }
+
+  function addNode(pd, xPos, yPos, zPos) {
+    const isFocus = pd.role==='Pessoa Foco';
+    const d = {
+      id:'p_'+(nextId++), name:pd.name,
+      gender: pd.gender || null,
+      birth: pd.birth||null, role:pd.role,
+      gen: pd.gen||3, x:xPos, y:yPos, z:zPos, focus:isFocus
+    };
+    PEOPLE.push(d);
+    const mesh = buildNodeMesh(d); scene.add(mesh);
+    const label = buildLabel(d.id, d.name, isFocus, isFocus ? null : d.role);
+    nodeMap[d.id] = {mesh, data:d, label};
+    return d;
+  }
+
+  // ── Place nodes ───────────────────────────────────────────────────────────
+  voiceParsed.forEach(pd => {
+    const role = pd.role;
+    let d;
+
+    if (FIXED_POS[role]) {
+      const fp = FIXED_POS[role];
+      // For repeated same role (e.g. ex-Cônjuge), shift right then z-offset via uniqPos
+      const prevCount = (createdMulti[role]||[]).length;
+      const {x,y,z} = uniqPos(fp.x + prevCount*3.5, fp.y, fp.z);
+      d = addNode(pd, x, y, z);
+      created[role] = d;
+      (createdMulti[role]||(createdMulti[role]=[])).push(d);
+
+    } else if (role==='Irmã' || role==='Irmão') {
+      const idx = siblings.indexOf(pd);
+      // Spread siblings to the LEFT of focus; each step -3.5 on X
+      const {x,y,z} = uniqPos(-3.5*(idx+1), -5, 0);
+      d = addNode(pd, x, y, z);
+      (createdMulti[role]||(createdMulti[role]=[])).push(d);
+
+    } else if (role==='Filho/a') {
+      const idx = children.indexOf(pd);
+      const total = children.length;
+      // Center filhos below focus+cônjuge midpoint (x≈3)
+      const baseX = 3 + (idx - (total-1)/2)*3.5;
+      const {x,y,z} = uniqPos(baseX, -11, 0);
+      d = addNode(pd, x, y, z);
+      (createdMulti['Filho/a']||(createdMulti['Filho/a']=[])).push(d);
+
+    } else if (role==='Neto/a') {
+      const idx = grandkids.indexOf(pd);
+      const total = grandkids.length;
+      const {x,y,z} = uniqPos((idx-(total-1)/2)*3.5, -17, 0);
+      d = addNode(pd, x, y, z);
+      (createdMulti['Neto/a']||(createdMulti['Neto/a']=[])).push(d);
+
+    } else if (role==='Tio' || role==='Tia') {
+      const idx = uncles.indexOf(pd);
+      // Spread uncles/aunts further left on gen2, slight Z depth
+      const {x,y,z} = uniqPos(-7.5 - idx*3.5, 2, 1.5);
+      d = addNode(pd, x, y, z);
+      (createdMulti[role]||(createdMulti[role]=[])).push(d);
+
+    } else if (role==='Sobrinho/a') {
+      const sobrIdx = (createdMulti['Sobrinho/a']||[]).length;
+      const {x,y,z} = uniqPos(-7.5 - sobrIdx*3, -11, 1.5);
+      d = addNode(pd, x, y, z);
+      (createdMulti['Sobrinho/a']||(createdMulti['Sobrinho/a']=[])).push(d);
+
+    } else if (role==='Primo/a') {
+      const idx = cousins.indexOf(pd);
+      const {x,y,z} = uniqPos(-7.5 - idx*3, -5, 1.5);
+      d = addNode(pd, x, y, z);
+      (createdMulti['Primo/a']||(createdMulti['Primo/a']=[])).push(d);
+
+    } else if (ecoRoles.has(role)) {
+      // Eco/rede de apoio nodes: use buildEcoMesh so they respond to ecomapa button
+      const ecoTypeMap = {
+        'Prof. Saúde':'saude','Cuidador/a':'saude','Serviço de Saúde':'saude',
+        'Assistência Social':'assist','Educação':'educ',
+        'Religião/Espiritualidade':'relig','Trabalho':'trab',
+        'Vizinho/a':'social','Amigo/a':'social','Pet':'social',
+      };
+      const idx = ecoNodes.indexOf(pd);
+      const total = ecoNodes.length;
+      const ecoX = 9 + (idx - (total-1)/2) * 3.5;
+      const ecoY = -5 + (idx % 2) * 2.5;
+      const {x,y,z} = uniqPos(ecoX, ecoY, 6);
+      d = {
+        id:'p_'+(nextId++), name:pd.name,
+        type: ecoTypeMap[role]||'social',
+        role: role, gen: pd.gen||3,
+        x, y, z
+      };
+      const ecoMesh = buildEcoMesh(d);   // sets mesh.visible=false, mesh._ecoData=d
+      scene.add(ecoMesh);
+      ecoMeshes.push(ecoMesh);
+      const ecoLabel = buildLabel(d.id, d.name, false, d.role);
+      ecoLabel.style.display = 'none';
+      nodeMap[d.id] = {mesh: ecoMesh, data: {...d, isEco:true}, label: ecoLabel};
+      (createdMulti['eco']||(createdMulti['eco']=[])).push(d);
+
+    } else {
+      // Fallback: gen-based Y, spread on X starting from x=10 to avoid core positions
+      const GY = {0:16,1:9,2:2,3:-5,4:-11,5:-17};
+      const g = pd.gen||3;
+      const existAtGen = Object.values(createdMulti).flat().filter(c=>c&&c.gen===g).length
+        + Object.values(created).filter(c=>c&&c.gen===g).length;
+      const {x,y,z} = uniqPos(10 + existAtGen * 3.5, GY[g]??-5, 0);
+      d = addNode(pd, x, y, z);
+      (createdMulti[role]||(createdMulti[role]=[])).push(d);
+    }
+  });
+
+  // ── Auto-bonds ────────────────────────────────────────────────────────────
+  // 1. Avô Paterno ↔ Avó Paterna → Pai
+  if (created['Avô Paterno'] && created['Avó Paterna']) {
+    const mr = drawMarriage(pos3(created['Avô Paterno']), pos3(created['Avó Paterna']), false, 1);
+    genLayer.push(...mr.objs);
+    if (created['Pai']) drawDirectArc(mr.mid, pos3(created['Pai']), 0x5588aa, 2);
+  } else if (created['Avô Paterno'] && created['Pai']) {
+    drawDirectArc(pos3(created['Avô Paterno']), pos3(created['Pai']), 0x5588aa, 2);
+  } else if (created['Avó Paterna'] && created['Pai']) {
+    drawDirectArc(pos3(created['Avó Paterna']), pos3(created['Pai']), 0x5588aa, 2);
+  }
+
+  // 2. Avô Materno ↔ Avó Materna → Mãe
+  if (created['Avô Materno'] && created['Avó Materna']) {
+    const mr = drawMarriage(pos3(created['Avô Materno']), pos3(created['Avó Materna']), false, 1);
+    genLayer.push(...mr.objs);
+    if (created['Mãe']) drawDirectArc(mr.mid, pos3(created['Mãe']), 0x5588aa, 2);
+  } else if (created['Avô Materno'] && created['Mãe']) {
+    drawDirectArc(pos3(created['Avô Materno']), pos3(created['Mãe']), 0x5588aa, 2);
+  } else if (created['Avó Materna'] && created['Mãe']) {
+    drawDirectArc(pos3(created['Avó Materna']), pos3(created['Mãe']), 0x5588aa, 2);
+  }
+
+  // 3. Pai ↔ Mãe marriage → filiação para foco + irmãos
+  const focusD = created['Pessoa Foco'];
+  const allSibsD = [
+    ...(createdMulti['Irmã']||[]),
+    ...(createdMulti['Irmão']||[])
+  ];
+  const filiationTargets = [...(focusD ? [focusD] : []), ...allSibsD];
+
+  if (created['Pai'] && created['Mãe']) {
+    const mr = drawMarriage(pos3(created['Pai']), pos3(created['Mãe']), false, 2);
+    genLayer.push(...mr.objs);
+    if (filiationTargets.length > 0) {
+      drawSiblingBar(mr.mid, filiationTargets.map(pos3), 3);
+    }
+  } else if (created['Pai'] && filiationTargets.length) {
+    filiationTargets.forEach(ch => drawDirectArc(pos3(created['Pai']), pos3(ch), 0x5588aa, 3));
+  } else if (created['Mãe'] && filiationTargets.length) {
+    filiationTargets.forEach(ch => drawDirectArc(pos3(created['Mãe']), pos3(ch), 0x5588aa, 3));
+  }
+
+  // 4. Pessoa Foco ↔ Cônjuge(s) marriage → filhos
+  // Supports LGBTQ+: all gender combinations, multiple partners (ex-partners = isSep=true)
+  const allChildrenD = createdMulti['Filho/a'] || [];
+  const allConjuges  = createdMulti['Cônjuge'] || (created['Cônjuge'] ? [created['Cônjuge']] : []);
+  let primaryMid = null;
+  if (focusD && allConjuges.length > 0) {
+    // Primary (current) Cônjuge — solid double line
+    const mr = drawMarriage(pos3(focusD), pos3(allConjuges[0]), false, 3);
+    genLayer.push(...mr.objs);
+    BONDS.push({type:'casamento', a:focusD.id, b:allConjuges[0].id});
+    primaryMid = mr.mid;
+    // Additional Cônjuges (ex-partners) — dashed/separated double line
+    for (let ci = 1; ci < allConjuges.length; ci++) {
+      const mr2 = drawMarriage(pos3(focusD), pos3(allConjuges[ci]), true, 3);
+      genLayer.push(...mr2.objs);
+      BONDS.push({type:'casamento_sep', a:focusD.id, b:allConjuges[ci].id});
+    }
+    if (allChildrenD.length > 0 && primaryMid) {
+      drawSiblingBar(primaryMid, allChildrenD.map(pos3), 4);
+    }
+  } else if (focusD && allChildrenD.length) {
+    allChildrenD.forEach(ch => drawDirectArc(pos3(focusD), pos3(ch), 0x5588aa, 4));
+  }
+
+  // 5. Filhos → Netos
+  const allGrandkidsD = createdMulti['Neto/a'] || [];
+  if (allChildrenD.length && allGrandkidsD.length) {
+    // Connect first child to all grandkids as simple arcs
+    allGrandkidsD.forEach(gk => drawDirectArc(pos3(allChildrenD[0]), pos3(gk), 0x5588aa, 5));
+  }
+
+  // 6. Rede de apoio / eco nodes → Pessoa Foco (eco layer — toggled by ecomapa button)
+  const allEcoD = createdMulti['eco'] || [];
+  if (focusD && allEcoD.length) {
+    allEcoD.forEach(en => {
+      const m = drawDirectArc(pos3(focusD), pos3(en), 0x8b9dbf, 3);
+      m.visible = false;   // hidden until ecomapa button activated
+      ecoLayer.push(m);
+    });
+  }
+
+  // ── Timeline: populate from voice-parsed birth years ────────────────────
+  const ROLE_BIRTH_SFX = {
+    'Pai':'pai','Mãe':'mãe','Cônjuge':'cônjuge',
+    'Irmão':'irmão','Irmã':'irmã',
+    'Avô Paterno':'avô pat.','Avó Paterna':'avó pat.',
+    'Avô Materno':'avô mat.','Avó Materna':'avó mat.',
+    'Filho/a':'filho/a','Neto/a':'neto/a',
+    'Tio':'tio','Tia':'tia','Primo/a':'primo/a',
+  };
+  voiceParsed.forEach(pd => {
+    if (pd.birth) {
+      const sfx = ROLE_BIRTH_SFX[pd.role] ? ` (${ROLE_BIRTH_SFX[pd.role]})` : '';
+      TL_EVENTS.push({year: pd.birth, label: `Nasc. ${pd.name}${sfx}`});
+    }
+  });
+  buildTimeline();
+
+  applyDepth(currentDepth);
+  applyLayers();
+  updateStats();
+  populateBlFamList();
+  document.getElementById('vp-build').style.display='none';
+  document.getElementById('vp-preview').classList.remove('on');
+  document.getElementById('voice-panel').classList.remove('on');
+  document.getElementById('btn-voice').classList.remove('rec');
+}
+
+function parseVoiceTranscript(text) {
+  const results = [];
+  const seen = new Set();
+  const t = text;
+
+  // Extract 1–3 Title-case words starting at position pos in t (NO /i flag = case-sensitive name capture)
+  // Skips common connectors: é/e/são, chama/chamado/chamada, de nome, o/a/os/as/de/da/do/Dona/Sr/Dr
+  function nameAt(pos) {
+    const filler = t.slice(pos).match(
+      /^[\s,]*(?:(?:[eé]h?|são|era|foi|de\s+nome|com\s+o\s+nome\s+de)\s+)?(?:(?:o|a|os|as|de|da|do|Dona|Sr|Srª|Dr|Dra)\s+)*(?:chamad[oa]s?\s+|chama[r]?\s+)?/i
+    );
+    const s = pos + (filler ? filler[0].length : 0);
+    if (/^se\s+/i.test(t.slice(s))) return null;  // "se chama" → seção 3 trata
+    const m = t.slice(s).match(/^([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ][a-záéíóúâêîôûãõàç]+(?:\s+[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ][a-záéíóúâêîôûãõàç]+){0,2})/);
+    return m ? m[1].trim() : null;
+  }
+
+  function add(name, role, gender, gen, birth) {
+    if (!name || name.length < 2) return;
+    const k = name.toLowerCase();
+    if (seen.has(k)) return;
+    seen.add(k);
+    results.push({ name, role, gender: gender || null, gen: gen || 3, birth: birth || null });
+  }
+
+  // ── 1. Pessoa Foco: todas as formas de auto-apresentação ─────────────────
+  const FILLER_WORDS = /^(ol[aá]|oi|bom|boa|sr|sra|dr|dra|ok|ent[aã]o|bem|al[oô]|ah|eh|hm|muito|bem|mais|não|também|já|está|é|e|um|uma|de|da|do|com|por|em|que|para|se)$/i;
+  for (const m of t.matchAll(/\b(?:me\s+chamo|me\s+chamam\s+de|meu\s+nome\s+(?:[eé]h?\s+)?|eu\s+me\s+chamo|meu\s+nome\s+[eé]h?|eu\s+sou\s+[ao]?|sou\s+[ao]?)\s*/gi)) {
+    const name = nameAt(m.index + m[0].length);
+    if (name && !FILLER_WORDS.test(name.split(/\s/)[0])) add(name, 'Pessoa Foco', null, 3, null);
+  }
+  // Interjection + title: "Olá Sr Rodrigo" → focus
+  for (const m of t.matchAll(/\b(?:sr|sra|dr|dra)\.?\s+/gi)) {
+    if (!results.some(r => r.role === 'Pessoa Foco')) {
+      const name = nameAt(m.index + m[0].length);
+      add(name, 'Pessoa Foco', null, 3, null);
+    }
+  }
+  // Leading Title-case words at start of text, followed by relationship keywords
+  if (!results.some(r => r.role === 'Pessoa Foco')) {
+    const lead = t.match(/^(?:[^\w]*(?:ol[aá]|oi)\s+)?([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ][a-záéíóúâêîôûãõàç]+(?:\s+[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ][a-záéíóúâêîôûãõàç]+){0,2})\s+(?=(?:meu|minha|meus|minhas|tenho|sou)\b)/i);
+    if (lead && /^[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ]/.test(lead[1]) && !FILLER_WORDS.test(lead[1].split(/\s/)[0])) add(lead[1].trim(), 'Pessoa Foco', null, 3, null);
+  }
+  // Fallback: any leading Title-case words before uppercase (original behavior)
+  if (!results.some(r => r.role === 'Pessoa Foco')) {
+    const lead2 = t.match(/^(?:[^\w]*(?:ol[aá]|oi)\s+)?([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ][a-záéíóúâêîôûãõàç]+(?:\s+[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ][a-záéíóúâêîôûãõàç]+){0,2})\s+(?=[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ])/);
+    if (lead2 && /^[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ]/.test(lead2[1]) && !FILLER_WORDS.test(lead2[1].split(/\s/)[0])) add(lead2[1].trim(), 'Pessoa Foco', null, 3, null);
+  }
+
+  // ── 2. Skip-zones: pets / non-humans (avoid capturing their names) ────────
+  const skipZones = [];
+  for (const m of t.matchAll(/\b(?:meus?|minhas?)\s+(?:pets?|animais?|gatos?|cachorros?|c[aã]es|bichos?|técnicos?|funcionários?)\s+se\s+chama[om]\b/gi)) {
+    skipZones.push([m.index, m.index + m[0].length + 80]);
+  }
+  function inSkip(pos) { return skipZones.some(([a, b]) => pos >= a && pos <= b); }
+
+  // ── 2b. Fala natural singular: qualquer forma de apresentar parentes ──────
+  // Cobre: "meu pai Manoel" / "minha mãe é Marilza" / "o pai chama Pedro" /
+  //        "meu pai chamado João" / "minha irmã mais velha Ana" / "um filho Carlos"
+  // nameAt() já pula é/chama/chamado/de nome; retorna null para "se chama" → seção 3 trata
+  const naturalRoles = [
+    // ── Geração 2: pais, padrastos, tios ───────────────────────────────────
+    // Nota: sem \b após role-word pois ô/ã/ã são não-word chars no JS regex
+    { re: /\b(?:meu\s+pai|o\s+(?:meu\s+)?pai|meu\s+pap[aá]i?|o\s+pap[aá]i?)\s+/gi,               role:'Pai',         gender:'M', gen:2 },
+    { re: /\b(?:minha\s+m[aã]e|a\s+(?:minha\s+)?m[aã]e|minha\s+mam[aã]e?|a\s+mam[aã]e?)\s+/gi,   role:'Mãe',         gender:'F', gen:2 },
+    { re: /\b(?:meu\s+padrasto|o\s+(?:meu\s+)?padrasto)\s+/gi,                                    role:'Padrasto',    gender:'M', gen:2 },
+    { re: /\b(?:minha\s+madrasta|a\s+(?:minha\s+)?madrasta)\s+/gi,                                role:'Madrasta',    gender:'F', gen:2 },
+    { re: /\b(?:meu\s+tio|o\s+(?:meu\s+)?tio)\s+/gi,                                              role:'Tio',         gender:'M', gen:2 },
+    { re: /\b(?:minha\s+tia|a\s+(?:minha\s+)?tia)\s+/gi,                                          role:'Tia',         gender:'F', gen:2 },
+    // ── Geração 3: irmãos, cônjuge, primos, cunhados ───────────────────────
+    { re: /\b(?:minha\s+irm[aã]|a\s+(?:minha\s+)?irm[aã])\s+/gi,                                   role:'Irmã',        gender:'F', gen:3 },
+    { re: /\b(?:meu\s+irm[aã]o|o\s+(?:meu\s+)?irm[aã]o)\s+/gi,                                   role:'Irmão',       gender:'M', gen:3 },
+    { re: /\b(?:meu\s+(?:marido|esposo|companheiro|parceiro)|o\s+marido)\s+/gi,                    role:'Cônjuge',     gender:'M', gen:3 },
+    { re: /\b(?:minha\s+(?:esposa|mulher|companheira|parceira)|a\s+esposa|a\s+mulher)\s+/gi,       role:'Cônjuge',     gender:'F', gen:3 },
+    { re: /\b(?:meu\s+primo|o\s+(?:meu\s+)?primo)\s+/gi,                                          role:'Primo/a',     gender:'M', gen:3 },
+    { re: /\b(?:minha\s+prima|a\s+(?:minha\s+)?prima)\s+/gi,                                      role:'Primo/a',     gender:'F', gen:3 },
+    { re: /\b(?:meu\s+cunhado|o\s+(?:meu\s+)?cunhado)\s+/gi,                                      role:'Cunhado/a',   gender:'M', gen:3 },
+    { re: /\b(?:minha\s+cunhada|a\s+(?:minha\s+)?cunhada)\s+/gi,                                  role:'Cunhado/a',   gender:'F', gen:3 },
+    // ── Geração 1: avós, bisavós ────────────────────────────────────────────
+    { re: /\b(?:meu\s+av[oô]|o\s+(?:meu\s+)?av[oô])\s+materno\s+/gi,                             role:'Avô Materno', gender:'M', gen:1 },
+    { re: /\b(?:minha\s+av[oó]|a\s+(?:minha\s+)?av[oó])\s+materna\s+/gi,                         role:'Avó Materna', gender:'F', gen:1 },
+    { re: /\b(?:meu\s+av[oô]|o\s+(?:meu\s+)?av[oô])\s+(?:paterno\s+)?/gi,                        role:'Avô Paterno', gender:'M', gen:1 },
+    { re: /\b(?:minha\s+av[oó]|a\s+(?:minha\s+)?av[oó])\s+(?:paterna\s+)?/gi,                    role:'Avó Paterna', gender:'F', gen:1 },
+    { re: /\b(?:meu\s+bisav[oô]|o\s+(?:meu\s+)?bisav[oô])\s+/gi,                                 role:'Bisavô',      gender:'M', gen:0 },
+    { re: /\b(?:minha\s+bisav[oó]|a\s+(?:minha\s+)?bisav[oó])\s+/gi,                             role:'Bisavó',      gender:'F', gen:0 },
+    // ── Geração 4: filhos, sobrinhos, genro/nora ────────────────────────────
+    { re: /\b(?:meu\s+filho|o\s+(?:meu\s+)?filho|um\s+filho)\s+/gi,                               role:'Filho/a',     gender:'M', gen:4 },
+    { re: /\b(?:minha\s+filha|a\s+(?:minha\s+)?filha|uma\s+filha)\s+/gi,                         role:'Filho/a',     gender:'F', gen:4 },
+    { re: /\b(?:meu\s+sobrinho|o\s+(?:meu\s+)?sobrinho)\s+/gi,                                   role:'Sobrinho/a',  gender:'M', gen:4 },
+    { re: /\b(?:minha\s+sobrinha|a\s+(?:minha\s+)?sobrinha)\s+/gi,                               role:'Sobrinho/a',  gender:'F', gen:4 },
+    { re: /\b(?:meu\s+genro|o\s+(?:meu\s+)?genro)\s+/gi,                                         role:'Genro/Nora',  gender:'M', gen:4 },
+    { re: /\b(?:minha\s+nora|a\s+(?:minha\s+)?nora)\s+/gi,                                       role:'Genro/Nora',  gender:'F', gen:4 },
+    // ── Geração 5: netos ─────────────────────────────────────────────────────
+    { re: /\b(?:meu\s+neto|o\s+(?:meu\s+)?neto)\s+/gi,                                           role:'Neto/a',      gender:'M', gen:5 },
+    { re: /\b(?:minha\s+neta|a\s+(?:minha\s+)?neta)\s+/gi,                                       role:'Neto/a',      gender:'F', gen:5 },
+    // ── Rede de apoio ────────────────────────────────────────────────────────
+    { re: /\b(?:meu\s+(?:m[eé]dico|terapeuta|psic[oó]logo|psiquiatra|enfermeiro))\s+/gi,          role:'Prof. Saúde', gender:'M', gen:3 },
+    { re: /\b(?:minha\s+(?:m[eé]dica|terapeuta|psic[oó]loga|psiquiatra|enfermeira))\s+/gi,        role:'Prof. Saúde', gender:'F', gen:3 },
+    { re: /\b(?:meu\s+(?:vizinho|amigo))\s+/gi,                                                   role:'Amigo/a',     gender:'M', gen:3 },
+    { re: /\b(?:minha\s+(?:vizinha|amiga))\s+/gi,                                                 role:'Amigo/a',     gender:'F', gen:3 },
+    { re: /\b(?:meu\s+cuidador)\s+/gi,                                                            role:'Cuidador/a',  gender:'M', gen:3 },
+    { re: /\b(?:minha\s+cuidadora)\s+/gi,                                                         role:'Cuidador/a',  gender:'F', gen:3 },
+  ];
+  const BAD_NAME = /^(?:mais|muito|bem|tão|já|não|também|está|tem|foi|era|vai|com|de|do|da|dos|das|em|por|para|que|quando|onde|como|qual|quem|se|mas|ou|nem|então|porque|porém|além)\b/i;
+  naturalRoles.forEach(({ re, role, gender, gen }) => {
+    for (const m of t.matchAll(re)) {
+      if (inSkip(m.index)) continue;
+      const name = nameAt(m.index + m[0].length);
+      if (!name || BAD_NAME.test(name)) continue;
+      const birth = extractVoiceYear(t.slice(m.index, m.index + 120));
+      add(name, role, gender, gen, birth);
+    }
+  });
+
+  // ── 2c. Fala natural plural: "minhas irmãs Raquel e Ana" / "meus primos X, Y" ──
+  // Também cobre "são X e Y", "chamadas X e Y", "X, Y e Z"
+  function extractPluralNames(startPos, role, gender, gen) {
+    let after = t.slice(startPos);
+    // Pula conectores antes dos nomes
+    after = after.replace(/^(?:(?:[eé]h?|são|eram)\s+)?(?:chamad[ao]s?\s+)?/i, '');
+    if (/^se\s+/i.test(after)) return; // seção 8 trata "se chamam"
+    let safety = 0;
+    while (safety++ < 8) {
+      const nm = after.match(/^([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ][a-záéíóúâêîôûãõàç]+(?:\s+[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ][a-záéíóúâêîôûãõàç]+){0,1})/);
+      if (!nm) break;
+      add(nm[1].trim(), role, gender, gen, null);
+      after = after.slice(nm[0].length);
+      const andM = after.match(/^\s*(?:,\s*(?:e\s+)?|e\s+)/);
+      if (!andM) break;
+      after = after.slice(andM[0].length);
+    }
+  }
+  const naturalPluralRoles = [
+    { re: /\bminhas\s+irm[aã]s\b\s+/gi,      role:'Irmã',       gender:'F', gen:3 },
+    { re: /\bmeus\s+irm[aã]os\b\s+/gi,       role:'Irmão',      gender:'M', gen:3 },
+    { re: /\b(?:meus|os)\s+filhos\b\s+/gi,   role:'Filho/a',    gender:'M', gen:4 },
+    { re: /\b(?:minhas|as)\s+filhas\b\s+/gi, role:'Filho/a',    gender:'F', gen:4 },
+    { re: /\bmeus\s+netos\b\s+/gi,           role:'Neto/a',     gender:'M', gen:5 },
+    { re: /\bminhas\s+netas\b\s+/gi,         role:'Neto/a',     gender:'F', gen:5 },
+    { re: /\bmeus\s+primos\b\s+/gi,          role:'Primo/a',    gender:'M', gen:3 },
+    { re: /\bminhas\s+primas\b\s+/gi,        role:'Primo/a',    gender:'F', gen:3 },
+    { re: /\bmeus\s+sobrinhos\b\s+/gi,       role:'Sobrinho/a', gender:'M', gen:4 },
+    { re: /\bminhas\s+sobrinhas\b\s+/gi,     role:'Sobrinho/a', gender:'F', gen:4 },
+    { re: /\bmeus\s+cunhados\b\s+/gi,        role:'Cunhado/a',  gender:'M', gen:3 },
+    { re: /\bminhas\s+cunhadas\b\s+/gi,      role:'Cunhado/a',  gender:'F', gen:3 },
+    { re: /\bmeus\s+tios\b\s+/gi,            role:'Tio',        gender:'M', gen:2 },
+    { re: /\bminhas\s+tias\b\s+/gi,          role:'Tia',        gender:'F', gen:2 },
+  ];
+  naturalPluralRoles.forEach(({ re, role, gender, gen }) => {
+    for (const m of t.matchAll(re)) {
+      if (inSkip(m.index)) continue;
+      extractPluralNames(m.index + m[0].length, role, gender, gen);
+    }
+  });
+
+  // ── 2d. "tenho N filhos/irmãos: X, Y e Z" ────────────────────────────────
+  // Nota: \S+ em vez de \w+ para capturar números com acento (três, dois, etc.)
+  const tenhoPluralRoles = [
+    { re: /\btenho\s+(?:\S+\s+)?filhos?[:\s]+/gi,        role:'Filho/a',  gender:'M', gen:4 },
+    { re: /\btenho\s+(?:\S+\s+)?filhas?[:\s]+/gi,        role:'Filho/a',  gender:'F', gen:4 },
+    { re: /\btenho\s+(?:\S+\s+)?irm[aã]os?[:\s]+/gi,     role:'Irmão',    gender:'M', gen:3 },
+    { re: /\btenho\s+(?:\S+\s+)?irm[aã]s?[:\s]+/gi,      role:'Irmã',     gender:'F', gen:3 },
+    { re: /\btenho\s+(?:\S+\s+)?netos?[:\s]+/gi,         role:'Neto/a',   gender:'M', gen:5 },
+    { re: /\btenho\s+(?:\S+\s+)?netas?[:\s]+/gi,         role:'Neto/a',   gender:'F', gen:5 },
+    { re: /\btenho\s+(?:\S+\s+)?primos?[:\s]+/gi,        role:'Primo/a',  gender:'M', gen:3 },
+    { re: /\btenho\s+(?:\S+\s+)?primas?[:\s]+/gi,        role:'Primo/a',  gender:'F', gen:3 },
+  ];
+  tenhoPluralRoles.forEach(({ re, role, gender, gen }) => {
+    for (const m of t.matchAll(re)) {
+      if (inSkip(m.index)) continue;
+      extractPluralNames(m.index + m[0].length, role, gender, gen);
+    }
+  });
+
+  // ── 3. "se chama" role phrases ────────────────────────────────────────────
+  // {0,3} qualifiers between role noun and "se chama" allow "mais velha", "do meio", etc.
+  const seChama = [
+    { re: /\bmeu\s+pai\s+se\s+chama\b/gi,                                             role:'Pai',          gender:'M', gen:2 },
+    { re: /\bminha\s+m[aã]e\s+se\s+chama\b/gi,                                        role:'Mãe',          gender:'F', gen:2 },
+    { re: /\bminha\s+irm[aã]\s+(?:\S+\s+){0,3}se\s+chama\b/gi,                        role:'Irmã',         gender:'F', gen:3 },
+    { re: /\bmeu\s+irm[aã]o\s+(?:\S+\s+){0,3}se\s+chama\b/gi,                         role:'Irmão',        gender:'M', gen:3 },
+    { re: /\bmeu\s+(?:marido|esposo|companheiro|c[oô]njuge|parceiro|namorado|noivo|ficante)\s+se\s+chama\b/gi, role:'Cônjuge', gender:'M', gen:3 },
+    { re: /\bminha\s+(?:esposa|mulher|companheira|parceira|namorada|noiva|ficante)\s+se\s+chama\b/gi,        role:'Cônjuge', gender:'F', gen:3 },
+    { re: /\bmeu\s+filho\s+(?:\S+\s+){0,2}se\s+chama\b/gi,                            role:'Filho/a',      gender:'M', gen:4 },
+    { re: /\bminha\s+filha\s+(?:\S+\s+){0,2}se\s+chama\b/gi,                          role:'Filho/a',      gender:'F', gen:4 },
+    { re: /\bmeu\s+av[oô]\s+(?:paterno\s+)?se\s+chama\b/gi,                           role:'Avô Paterno',  gender:'M', gen:1 },
+    { re: /\bminha\s+av[oó]\s+(?:paterna\s+)?se\s+chama\b/gi,                         role:'Avó Paterna',  gender:'F', gen:1 },
+    { re: /\bmeu\s+av[oô]\s+materno\s+se\s+chama\b/gi,                                role:'Avô Materno',  gender:'M', gen:1 },
+    { re: /\bminha\s+av[oó]\s+materna\s+se\s+chama\b/gi,                              role:'Avó Materna',  gender:'F', gen:1 },
+    { re: /\bmeu\s+neto\s+se\s+chama\b/gi,                                            role:'Neto/a',       gender:'M', gen:5 },
+    { re: /\bminha\s+neta\s+se\s+chama\b/gi,                                          role:'Neto/a',       gender:'F', gen:5 },
+    { re: /\bmeu\s+tio\s+se\s+chama\b/gi,                                             role:'Tio',          gender:'M', gen:2 },
+    { re: /\bminha\s+tia\s+se\s+chama\b/gi,                                           role:'Tia',          gender:'F', gen:2 },
+    { re: /\bmeu\s+sobrinho\s+se\s+chama\b/gi,                                        role:'Sobrinho/a',   gender:'M', gen:4 },
+    { re: /\bminha\s+sobrinha\s+se\s+chama\b/gi,                                      role:'Sobrinho/a',   gender:'F', gen:4 },
+    { re: /\bmeu\s+primo\s+se\s+chama\b/gi,                                           role:'Primo/a',      gender:'M', gen:3 },
+    { re: /\bminha\s+prima\s+se\s+chama\b/gi,                                         role:'Primo/a',      gender:'F', gen:3 },
+    { re: /\bmeu\s+bisav[oô]\s+se\s+chama\b/gi,                                       role:'Bisavô',       gender:'M', gen:0 },
+    { re: /\bminha\s+bisav[oó]\s+se\s+chama\b/gi,                                     role:'Bisavó',       gender:'F', gen:0 },
+    { re: /\bmeu\s+cunhado\s+se\s+chama\b/gi,                                         role:'Cunhado/a',    gender:'M', gen:3 },
+    { re: /\bminha\s+cunhada\s+se\s+chama\b/gi,                                       role:'Cunhado/a',    gender:'F', gen:3 },
+    { re: /\bmeu\s+padrasto\s+se\s+chama\b/gi,                                        role:'Padrasto',     gender:'M', gen:2 },
+    { re: /\bminha\s+madrasta\s+se\s+chama\b/gi,                                      role:'Madrasta',     gender:'F', gen:2 },
+    { re: /\bmeu\s+genro\s+se\s+chama\b/gi,                                           role:'Genro/Nora',   gender:'M', gen:4 },
+    { re: /\bminha\s+nora\s+se\s+chama\b/gi,                                          role:'Genro/Nora',   gender:'F', gen:4 },
+    // ── Singular "se chama" — rede de apoio ────────────────────────────────
+    { re: /\bmeu\s+(?:vizinho|colega)\s+se\s+chama\b/gi,                               role:'Vizinho/a',    gender:'M', gen:3 },
+    { re: /\bminha\s+(?:vizinha|colega)\s+se\s+chama\b/gi,                             role:'Vizinho/a',    gender:'F', gen:3 },
+    { re: /\bmeu\s+cuidador\s+se\s+chama\b/gi,                                         role:'Cuidador/a',   gender:'M', gen:3 },
+    { re: /\bminha\s+cuidadora\s+se\s+chama\b/gi,                                      role:'Cuidador/a',   gender:'F', gen:3 },
+    { re: /\bmeu\s+amigo\s+(?:\S+\s+){0,2}se\s+chama\b/gi,                            role:'Amigo/a',      gender:'M', gen:3 },
+    { re: /\bminha\s+amiga\s+(?:\S+\s+){0,2}se\s+chama\b/gi,                          role:'Amigo/a',      gender:'F', gen:3 },
+    { re: /\bmeu\s+(?:m[eé]dico|terapeuta|psic[oó]logo|psiquiatra|enfermeiro)\s+se\s+chama\b/gi, role:'Prof. Saúde', gender:'M', gen:3 },
+    { re: /\bminha\s+(?:m[eé]dica|terapeuta|psic[oó]loga|psiquiatra|enfermeira)\s+se\s+chama\b/gi, role:'Prof. Saúde', gender:'F', gen:3 },
+    { re: /\bmeu\s+(?:pet|cachorro|gato|c[aã]o)\s+se\s+chama\b/gi,                    role:'Pet',          gender:null, gen:3 },
+    { re: /\bminha\s+(?:gata|cadela|cachorra|pet)\s+se\s+chama\b/gi,                   role:'Pet',          gender:null, gen:3 },
+  ];
+  seChama.forEach(({ re, role, gender, gen }) => {
+    for (const m of t.matchAll(re)) {
+      if (inSkip(m.index)) continue;
+      const name = nameAt(m.index + m[0].length);
+      const birth = extractVoiceYear(t.slice(m.index, m.index + 100));
+      add(name, role, gender, gen, birth);
+    }
+  });
+
+  // ── 4. Cônjuge por contexto — inclui TODAS as relações LGBTQIAPN+ ──────────
+  // "casado/a com X", "namorando X", "parceiro/a X", "companheiro/a X", etc.
+  const conjugeContextM = [
+    /\bcasado\s+com\s+/gi,
+    /\bnoivo\s+(?:de|com)\s+/gi,
+    /\bem\s+uni[aã]o\s+est[aá]vel\s+com\s+/gi,
+    /\bvivo\s+com\s+/gi,
+    /\bmoro\s+com\s+(?:meu\s+)?(?:marido|esposo|companheiro|c[oô]njuge|parceiro)\s+/gi,
+    /\bmeu\s+(?:marido|esposo|companheiro|c[oô]njuge|parceiro|namorado|noivo|ficante)\s+/gi,
+    /\bnamorando\s+/gi,
+    /\bme\s+relaciono\s+com\s+/gi,
+    /\btenho\s+um\s+(?:relacionamento|namoro|companheiro|parceiro)\s+com\s+/gi,
+    /\bsou\s+casado\s+com\s+/gi,
+    /\bme\s+casei\s+com\s+/gi,
+  ];
+  const conjugeContextF = [
+    /\bcasada\s+com\s+/gi,
+    /\bnoiva\s+(?:de|com)\s+/gi,
+    /\bmoro\s+com\s+(?:minha\s+)?(?:esposa|mulher|companheira|parceira)\s+/gi,
+    /\bminha\s+(?:esposa|mulher|companheira|parceira|namorada|noiva|ficante)\s+/gi,
+    /\bsou\s+casada\s+com\s+/gi,
+    /\bme\s+casei\s+com\s+/gi,
+    /\btenho\s+uma\s+(?:companheira|parceira|namorada)\s+/gi,
+  ];
+  conjugeContextM.forEach(re => {
+    for (const m of t.matchAll(re)) {
+      const name = nameAt(m.index + m[0].length);
+      if (name && !BAD_NAME.test(name)) add(name, 'Cônjuge', 'M', 3, null);
+    }
+  });
+  conjugeContextF.forEach(re => {
+    for (const m of t.matchAll(re)) {
+      const name = nameAt(m.index + m[0].length);
+      if (name && !BAD_NAME.test(name)) add(name, 'Cônjuge', 'F', 3, null);
+    }
+  });
+
+  // ── 5. "meus pais são X e Y" / "meus pais se chamam X e Y" ──────────────
+  for (const m of t.matchAll(/\b(?:os\s+)?meus\s+pais\s+(?:s[aã]o|se\s+chamam|se\s+chama)\s+/gi)) {
+    const after = t.slice(m.index + m[0].length);
+    const two = after.match(/^([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ][a-záéíóúâêîôûãõàç]+(?:\s+[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ][a-záéíóúâêîôûãõàç]+){0,1})\s+e\s+([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ][a-záéíóúâêîôûãõàç]+(?:\s+[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ][a-záéíóúâêîôûãõàç]+){0,1})/);
+    if (two) { add(two[1].trim(), 'Mãe', 'F', 2, null); add(two[2].trim(), 'Pai', 'M', 2, null); }
+    else add(nameAt(m.index + m[0].length), 'Pai', 'M', 2, null);
+  }
+
+  // ── 6. "duas irmãs chamadas X" ────────────────────────────────────────────
+  for (const m of t.matchAll(/\bduas\s+irm[aã]s\s+chamadas?\s+/gi)) {
+    add(nameAt(m.index + m[0].length), 'Irmã', 'F', 3, null);
+  }
+  // ── 7. "dois irmãos chamados X" ──────────────────────────────────────────
+  for (const m of t.matchAll(/\bdois\s+irm[aã]os\s+chamados?\s+/gi)) {
+    add(nameAt(m.index + m[0].length), 'Irmão', 'M', 3, null);
+  }
+
+  // ── 8. Plural "se chamam X e Y" — capture multiple names ─────────────────
+  const pluralPairs = [
+    { re: /\bminhas\s+irm[aã]s\s+(?:\S+\s+){0,3}se\s+chamam\s+/gi,  role:'Irmã',    gender:'F', gen:3 },
+    { re: /\bmeus\s+irm[aã]os\s+(?:\S+\s+){0,3}se\s+chamam\s+/gi,   role:'Irmão',   gender:'M', gen:3 },
+    { re: /\bmeus\s+filhos\s+(?:\S+\s+){0,2}se\s+chamam\s+/gi,       role:'Filho/a', gender:'M', gen:4 },
+    { re: /\bminhas\s+filhas\s+(?:\S+\s+){0,2}se\s+chamam\s+/gi,     role:'Filho/a', gender:'F', gen:4 },
+    { re: /\bmeus\s+netos\s+(?:\S+\s+){0,2}se\s+chamam\s+/gi,        role:'Neto/a',  gender:'M', gen:5 },
+    { re: /\bminhas\s+netas\s+(?:\S+\s+){0,2}se\s+chamam\s+/gi,      role:'Neto/a',  gender:'F', gen:5 },
+  ];
+  pluralPairs.forEach(({ re, role, gender, gen }) => {
+    for (const m of t.matchAll(re)) {
+      if (inSkip(m.index)) continue;
+      let after = t.slice(m.index + m[0].length);
+      let safety = 0;
+      while (safety++ < 6) {
+        const nm = after.match(/^([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ][a-záéíóúâêîôûãõàç]+(?:\s+[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ][a-záéíóúâêîôûãõàç]+){0,1})/);
+        if (!nm) break;
+        add(nm[1].trim(), role, gender, gen, null);
+        after = after.slice(nm[0].length);
+        const andM = after.match(/^\s*(?:,\s*|e\s+|,\s*e\s+)/);
+        if (!andM) break;
+        after = after.slice(andM[0].length);
+      }
+    }
+  });
+
+  // ── 9. "chamam X e Y" without quantity word ───────────────────────────────
+  // Also handle "meus pais se chamam X e Y" (already in section 5)
+
+  // Sort: Pessoa Foco first, then by generation
+  results.sort((a, b) => {
+    if (a.role === 'Pessoa Foco') return -1;
+    if (b.role === 'Pessoa Foco') return 1;
+    return a.gen - b.gen;
+  });
+  return results;
+}
+
+function extractVoiceName(s) {
+  // Two-step: find trigger (case-insensitive), then extract name (case-sensitive, no /i)
+  const trigRe = /(?:se\s+chama|chama-se|chamado[a]?|nome\s+[eé]h?|me\s+chamo|sou\s+[ao])\s+/i;
+  const tm = s.match(trigRe);
+  if (tm) {
+    const pos = tm.index + tm[0].length;
+    const nm = s.slice(pos).match(/^([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ][a-záéíóúâêîôûãõàç]+(?:\s+[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÇ][a-záéíóúâêîôûãõàç]+){0,2})/);
+    if (nm && nm[1].length > 1) return nm[1].trim();
+  }
+  return null;
+}
+
+function extractVoiceYear(s){
+  let m=s.match(/nasceu\s+em\s+(\d{4})/i); if(m) return parseInt(m[1]);
+  m=s.match(/\b(19\d{2}|20[012]\d)\b/); if(m) return parseInt(m[1]);
+  m=s.match(/tem\s+(\d{1,3})\s+anos/i);
+  if(m){ const age=parseInt(m[1]); return new Date().getFullYear()-age; }
+  return null;
+}
+
+function extractVoiceGender(s){
+  if(/\b(ele|irmão|filho|pai|avô|neto|tio|bisavô|marido|esposo|companheiro|primo|sobrinho)\b/i.test(s)) return 'M';
+  if(/\b(ela|irmã|filha|mãe|mae|avó|neta|tia|bisavó|esposa|mulher|companheira|prima|sobrinha)\b/i.test(s)) return 'F';
+  return null;
+}
+
+// ════════════════════════════════════════════════════
+// CONTEXT MENU
+// ════════════════════════════════════════════════════
+let ctxPersonId = null;
+
+function _initCtxMenu(){
+  const cv=document.getElementById('cv');
+  if(!cv) return;
+  cv.addEventListener('contextmenu', e=>{
+    e.preventDefault();
+    const rect=cv.getBoundingClientRect();
+    const mx=((e.clientX-rect.left)/rect.width)*2-1;
+    const my=-((e.clientY-rect.top)/rect.height)*2+1;
+    if(typeof raycaster==='undefined'||typeof camera==='undefined') return;
+    raycaster.setFromCamera(new THREE.Vector2(mx,my),camera);
+    const meshes=visibleMeshes();
+    const hits=raycaster.intersectObjects(meshes,true);
+    if(!hits.length){ hideCtxMenu(); return; }
+    let obj=hits[0].object;
+    for(let i=0;i<5;i++){
+      if(!obj) break;
+      if(obj.userData&&(obj.userData.nodeId||obj.userData.extId)) break;
+      obj=obj.parent;
+    }
+    if(!obj){ hideCtxMenu(); return; }
+    const pid=obj.userData.nodeId||obj.userData.extId;
+    if(!pid||!nodeMap[pid]){ hideCtxMenu(); return; }
+    ctxPersonId=pid;
+    const person=nodeMap[pid].data;
+    document.getElementById('ctx-name').textContent=(person.name||'?')+' — '+(person.role||'');
+    const hasExt=!!(window.EXTENDED_GENOGRAMS&&window.EXTENDED_GENOGRAMS[pid]&&window.EXTENDED_GENOGRAMS[pid].nodes&&window.EXTENDED_GENOGRAMS[pid].nodes.length>0);
+    const expandItem=document.getElementById('ctx-expand');
+    if(expandItem) expandItem.style.display=hasExt?'flex':'none';
+    const menu=document.getElementById('ctx-menu');
+    const safeX=Math.min(e.clientX,window.innerWidth-210);
+    const safeY=Math.min(e.clientY,window.innerHeight-200);
+    menu.style.left=safeX+'px';
+    menu.style.top=safeY+'px';
+    menu.classList.add('on');
+  });
+}
+
+document.addEventListener('click', e=>{
+  const menu=document.getElementById('ctx-menu');
+  if(menu&&!menu.contains(e.target)) hideCtxMenu();
+});
+
+function hideCtxMenu(){
+  const m=document.getElementById('ctx-menu');
+  if(m) m.classList.remove('on');
+}
+
+function ctxEdit(){ hideCtxMenu(); if(ctxPersonId) openPersonDetail(ctxPersonId); }
+
+function ctxSetFocus(){
+  hideCtxMenu(); if(!ctxPersonId) return;
+  PEOPLE.forEach(p=>{ if(p.focus){ p.focus=false; } });
+  const entry=nodeMap[ctxPersonId]; if(!entry) return;
+  entry.data.focus=true;
+  // Rebuild all nodes to reflect focus change
+  PEOPLE.forEach(p=>{
+    if(!nodeMap[p.id]) return;
+    const oldM=nodeMap[p.id].mesh; scene.remove(oldM);
+    if(oldM.geometry) oldM.geometry.dispose();
+    const newM=buildNodeMesh(p); scene.add(newM);
+    nodeMap[p.id].mesh=newM;
+  });
+  applyDepth(currentDepth); applyLayers();
+}
+
+function ctxExpandGen(){ hideCtxMenu(); if(ctxPersonId) toggleExtGenogram(ctxPersonId); }
+
+function ctxRemove(){
+  hideCtxMenu(); if(!ctxPersonId) return;
+  const entry=nodeMap[ctxPersonId]; if(!entry) return;
+  scene.remove(entry.mesh);
+  if(entry.mesh.geometry) entry.mesh.geometry.dispose();
+  if(entry.label) entry.label.remove();
+  // Remove from bonds/arcs layers
+  ['bowenLayer','filLayer','marLayer','ecoLayer'].forEach(arr=>{
+    if(!window[arr]) return;
+    const toRemove=window[arr].filter(m=>{
+      const ud=m.userData||{};
+      return ud.fromId===ctxPersonId||ud.toId===ctxPersonId;
+    });
+    toRemove.forEach(m=>{ scene.remove(m); });
+    window[arr]=window[arr].filter(m=>!toRemove.includes(m));
+  });
+  delete nodeMap[ctxPersonId];
+  const idx=PEOPLE.findIndex(p=>p.id===ctxPersonId);
+  if(idx>-1) PEOPLE.splice(idx,1);
+  ctxPersonId=null; updateStats(); populateBlFamList();
+}
+
+// ════════════════════════════════════════════════════
+// PERSON DETAIL MODAL
+// ════════════════════════════════════════════════════
+let currentDetailId = null;
+
+function openPersonDetail(pid){
+  const entry=nodeMap[pid]; if(!entry) return;
+  currentDetailId=pid;
+  const d=entry.data;
+  const hdrName=document.getElementById('pd-hdr-name');
+  if(hdrName) hdrName.textContent=d.name||'';
+  const hdrRole=document.getElementById('pd-hdr-role');
+  if(hdrRole) hdrRole.textContent=(d.role||'')+(d.gen?' · G'+d.gen:'');
+  const ICONS={M:'■',F:'●',T:'◆'};
+  const COLORS={M:'#2563eb',F:'#e11d7a',T:'#7c3aed'};
+  const icon=document.getElementById('pd-icon');
+  if(icon){ icon.textContent=ICONS[d.gender]||'?'; icon.style.color=COLORS[d.gender]||'#6b7280'; }
+  const setV=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v||''; };
+  const setC=(id,v)=>{ const el=document.getElementById(id); if(el) el.checked=!!v; };
+  setV('pd-name',d.name); setV('pd-surname',d.surname); setV('pd-nickname',d.nickname);
+  setV('pd-birth',d.birth); setV('pd-gender',d.gender); setV('pd-role',d.role);
+  setV('pd-gen',d.gen||3);
+  setV('pd-civil',d.civil); setV('pd-city',d.city); setV('pd-edu',d.edu); setV('pd-job',d.job);
+  setV('pd-health',d.health); setV('pd-subst',d.subst);
+  setC('pd-deceased',d.deceased);
+  setV('pd-death-year',d.death); setV('pd-death-cause',d.deathCause);
+  setV('pd-bond-qual',d.bondQual); setV('pd-contact',d.contact);
+  setV('pd-notes',d.notes);
+  document.getElementById('person-detail').classList.add('on');
+}
+
+function closePersonDetail(){
+  const modal=document.getElementById('person-detail');
+  if(modal) modal.classList.remove('on');
+  currentDetailId=null;
+}
+
+function savePersonDetail(){
+  if(!currentDetailId||!nodeMap[currentDetailId]) return;
+  const d=nodeMap[currentDetailId].data;
+  const gV=(id)=>{ const el=document.getElementById(id); return el?el.value.trim():''; };
+  const gC=(id)=>{ const el=document.getElementById(id); return el?el.checked:false; };
+  const newName=gV('pd-name')||d.name;
+  const newGender=gV('pd-gender')||d.gender;
+  const newGen=parseInt(gV('pd-gen'))||d.gen;
+  d.name=newName; d.surname=gV('pd-surname'); d.nickname=gV('pd-nickname');
+  const birthVal=parseInt(gV('pd-birth'));
+  d.birth=isNaN(birthVal)?d.birth:birthVal;
+  d.gender=newGender; d.role=gV('pd-role')||d.role; d.gen=newGen;
+  d.civil=gV('pd-civil'); d.city=gV('pd-city'); d.edu=gV('pd-edu'); d.job=gV('pd-job');
+  d.health=gV('pd-health'); d.subst=gV('pd-subst');
+  d.deceased=gC('pd-deceased');
+  const deathVal=parseInt(gV('pd-death-year'));
+  d.death=isNaN(deathVal)?null:deathVal;
+  d.deathCause=gV('pd-death-cause');
+  d.bondQual=gV('pd-bond-qual'); d.contact=gV('pd-contact');
+  d.notes=gV('pd-notes');
+  // Rebuild mesh
+  const oldMesh=nodeMap[currentDetailId].mesh;
+  scene.remove(oldMesh);
+  if(oldMesh.geometry) oldMesh.geometry.dispose();
+  const newMesh=buildNodeMesh(d); scene.add(newMesh);
+  nodeMap[currentDetailId].mesh=newMesh;
+  // Update label text
+  const lbl=nodeMap[currentDetailId].label;
+  if(lbl) lbl.textContent=newName+(d.birth?' ('+d.birth+')':'');
+  applyDepth(currentDepth); applyLayers();
+  updateStats(); populateBlFamList();
+  closePersonDetail();
+}
+
+// ════════════════════════════════════════════════════
+// WELCOME
+// ════════════════════════════════════════════════════
+function enterDemo() {
+  document.getElementById('welcome').classList.add('gone');
+  setTimeout(()=>document.getElementById('hint').classList.add('gone'),5000);
+}
+
+// ════════════════════════════════════════════════════
+// RESIZE
+// ════════════════════════════════════════════════════
+function onResize() {
+  const cv=document.getElementById('cv');
+  const W=cv.clientWidth, H=cv.clientHeight;
+  camera.aspect=W/H; camera.updateProjectionMatrix();
+  renderer.setSize(W,H);
+}
+
+// ════════════════════════════════════════════════════
+// MAIN
+// ════════════════════════════════════════════════════
+function main() {
+  initSupa(); initScene(); populateScene(); animate(); _initCtxMenu();
+  setTimeout(()=>{
+    document.getElementById('loading').classList.add('out');
+    setTimeout(()=>{
+      document.getElementById('loading').style.display='none';
+      document.getElementById('welcome').classList.remove('gone');
+    },500);
+  },1900);
+}
+window.addEventListener('load',main);
+</script>
+</body>
+</html>
