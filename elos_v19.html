@@ -4317,7 +4317,15 @@ function savePersonDetail(){
 // ════════════════════════════════════════════════════
 // WELCOME
 // ════════════════════════════════════════════════════
+let DEMO_SNAPSHOT = null;   // cópia da demo tirada no carregamento, antes de qualquer edição
+
 function enterDemo() {
+  // Depois de "Novo" ou de abrir outro genograma, os dados da demo foram apagados: recarrega a cópia
+  if (!nodeMap.sofia && DEMO_SNAPSHOT) {
+    loadSnapshot(_clone(DEMO_SNAPSHOT));
+    currentGenogram=null;
+    document.getElementById('hint').classList.remove('gone');
+  }
   document.getElementById('welcome').classList.add('gone');
   setTimeout(()=>document.getElementById('hint').classList.add('gone'),5000);
 }
@@ -4336,7 +4344,7 @@ function onResize() {
 // MAIN
 // ════════════════════════════════════════════════════
 function main() {
-  initSupa(); initScene(); populateScene(); animate(); _initCtxMenu(); initAuth();
+  initSupa(); initScene(); populateScene(); DEMO_SNAPSHOT=buildSnapshot(); animate(); _initCtxMenu(); initAuth();
   setTimeout(()=>{
     document.getElementById('loading').classList.add('out');
     setTimeout(()=>{
