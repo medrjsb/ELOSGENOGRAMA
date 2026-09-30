@@ -119,26 +119,16 @@
 
     /* ── CONTEXT MENU ─────────────────────────── */
     #ctx-menu { position:fixed; background:rgba(11,19,37,.98); border:1px solid var(--border2);
-      border-radius:9px; padding:5px 0; z-index:500; display:none; min-width:190px;
+      border-radius:9px; padding:5px 0; z-index:500; display:none; min-width:180px;
       box-shadow:0 12px 32px rgba(0,0,0,.6); backdrop-filter:blur(14px); }
     #ctx-menu.on { display:block; }
     .ctx-item { padding:8px 16px; font-size:12px; color:var(--text2); cursor:pointer;
-      transition:background .15s; display:flex; align-items:center; gap:8px; position:relative; }
+      transition:background .15s; display:flex; align-items:center; gap:8px; }
     .ctx-item:hover { background:rgba(255,255,255,.06); color:var(--text); }
     .ctx-item.danger { color:var(--red); }
     .ctx-item.danger:hover { background:rgba(248,113,113,.08); }
     .ctx-sep { height:1px; background:var(--border); margin:4px 8px; }
     .ctx-name { padding:8px 16px; font-size:11px; color:var(--dim); font-style:italic; }
-    /* Submenu */
-    .ctx-sub { position:relative; }
-    .ctx-sub-arrow { margin-left:auto; opacity:.5; font-size:10px; }
-    .ctx-submenu { position:absolute; left:100%; top:-5px; background:rgba(11,19,37,.99);
-      border:1px solid var(--border2); border-radius:9px; padding:5px 0; min-width:180px;
-      box-shadow:0 12px 32px rgba(0,0,0,.7); display:none; z-index:501; }
-    .ctx-sub:hover .ctx-submenu { display:block; }
-    .ctx-submenu .ctx-item { padding:7px 14px; font-size:11.5px; }
-    .ctx-submenu .ctx-sep { margin:3px 8px; }
-    .ctx-bond-sym { font-size:11px; opacity:.7; min-width:22px; text-align:center; }
 
     /* ── PERSON DETAIL MODAL ──────────────────── */
     #person-detail { position:fixed; inset:0; background:rgba(6,12,24,.7);
@@ -501,7 +491,7 @@
     <p>Visualize redes de família, suporte e vínculos em três dimensões — genograma, ecomapa e dinâmicas de Bowen integrados.</p>
     <div class="wc-btns">
       <button class="btn-build" onclick="startNewGenogram()">🔨 Construir meu genograma</button>
-      <button class="btn-primary" onclick="enterDemo()">Demo: Sofia</button>
+      <button class="btn-primary" onclick="enterDemo()">Explorar demo (Sofia)</button>
       <button class="btn-sec" onclick="showAuth()">Entrar com conta</button>
     </div>
   </div>
@@ -509,7 +499,7 @@
 
 <!-- TOPBAR -->
 <div class="topbar">
-  <div class="tb-brand" onclick="goHome()" title="Voltar à tela inicial" style="cursor:pointer">⬡ ELOS</div>
+  <div class="tb-brand">⬡ ELOS</div>
   <button class="layer-btn active" id="btn-genogram" onclick="toggleLayer('genogram')">Genograma</button>
   <button class="layer-btn" id="btn-eco"      onclick="toggleLayer('eco')">Ecomapa</button>
   <button class="layer-btn" id="btn-bowen"    onclick="toggleLayer('bowen')">Bowen</button>
@@ -525,7 +515,6 @@
   <div class="tb-sep"></div>
   <span id="ext-badge" class="tb-ext-badge" style="display:none">⊕ 0 genogramas</span>
   <div class="tb-spacer"></div>
-  <button class="build-btn" onclick="goHome()" title="Voltar à tela inicial" style="background:rgba(6,214,160,.08);border-color:var(--teal);color:var(--teal)">⌂ Início</button>
   <button class="build-btn" onclick="startNewGenogram()">🔨 Novo</button>
   <button class="voice-btn" id="btn-voice" onclick="toggleVoicePanel()">🎙 Gravar</button>
   <button class="add-btn" onclick="openAddModal()">+ Pessoa</button>
@@ -665,7 +654,7 @@
         Família <span class="blc-fam-arr">▼</span>
       </div>
       <div class="blc-fam-body">
-        <div class="blc-fam-label" id="blc-fam-title">Família · <span id="bl-bond-count">—</span> vínculos</div>
+        <div class="blc-fam-label" id="blc-fam-title">Família Andrade · <span id="bl-bond-count">—</span> vínculos</div>
         <div id="blc-fam-list"><!-- populated by JS --></div>
       </div>
     </div>
@@ -677,7 +666,7 @@
       <div class="blc-symb-body">
         <div class="symb-row"><span class="si" style="color:#4a9eff">■</span> Homem (cubo azul)</div>
         <div class="symb-row"><span class="si" style="color:#e11d7a">●</span> Mulher (esfera rosa)</div>
-        <div class="symb-row"><span class="si" style="color:#7c3aed">◆</span> Trans / Não-binário / Fluido / Agênero (octaedro)</div>
+        <div class="symb-row"><span class="si" style="color:#c084fc">◆</span> Trans / NB (octaedro)</div>
         <div class="symb-row"><span class="si" style="color:#06d6a0">⊙</span> Pessoa foco (anel)</div>
         <div class="symb-row"><span class="si" style="color:#6a8aac">⊠</span> Falecido/a (wireframe)</div>
         <hr class="symb-div">
@@ -702,22 +691,13 @@
 <!-- ADD PERSON MODAL -->
 <div class="modal-bg" id="add-modal" hidden>
   <div class="modal-box">
-    <h3 id="add-modal-title">Adicionar ao genograma</h3>
-    <!-- Subtítulo só para modo Pessoa Foco -->
-    <p id="add-focus-hint" style="display:none;font-size:12px;color:var(--teal);margin:-6px 0 10px;opacity:.85;">
-      Esse é você — a pessoa central do genograma.
-    </p>
+    <h3>Adicionar ao genograma</h3>
     <label>Nome <input id="add-name" placeholder="Nome completo"></label>
     <label>Gênero
       <select id="add-gender">
-        <option value="M">Homem cisgênero ■</option>
-        <option value="F">Mulher cisgênero ●</option>
-        <option value="TM">Homem transgênero ◆</option>
-        <option value="TF">Mulher transgênero ◆</option>
-        <option value="NB">Não-binário ◆</option>
-        <option value="GF">Gênero fluido ◆</option>
-        <option value="AG">Agênero ◆</option>
-        <option value="">Não informado</option>
+        <option value="M">Masculino ■</option>
+        <option value="F">Feminino ●</option>
+        <option value="T">Trans / Não-binário ◆</option>
       </select>
     </label>
     <label id="add-birth-lbl">Ano de nascimento <input id="add-birth" type="number" placeholder="1980" min="1900" max="2030"></label>
@@ -731,8 +711,7 @@
         <option value="1">Sim</option>
       </select>
     </label>
-    <!-- Campos só visíveis quando há Pessoa Foco -->
-    <label id="add-rel-row">Relação com a pessoa foco
+    <label>Relação com a pessoa foco
       <select id="add-rel" onchange="onRelChange(this.value)">
         <option>Pai</option><option>Mãe</option>
         <option>Cônjuge</option><option>Filho/a</option>
@@ -742,7 +721,7 @@
         <option>Neto/a</option><option>Outro</option>
       </select>
     </label>
-    <label id="add-gen-row">Geração (posição vertical)
+    <label>Geração (posição vertical)
       <select id="add-gen">
         <option value="1">G1 — Bisavós / Avós</option>
         <option value="2">G2 — Pais / Tios</option>
@@ -751,11 +730,11 @@
         <option value="5">G5 — Netos</option>
       </select>
     </label>
-    <label id="add-focus-row" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
       <input type="checkbox" id="add-focus" style="width:14px;height:14px">
       <span>Definir como pessoa foco ⊙</span>
     </label>
-    <label id="add-partner-row">Vínculo conjugal com
+    <label>Vínculo conjugal com
       <select id="add-partner"><option value="">— nenhum —</option></select>
     </label>
     <div class="modal-actions">
@@ -882,55 +861,6 @@
 <div id="ctx-menu">
   <div class="ctx-name" id="ctx-name">—</div>
   <div class="ctx-sep"></div>
-  <!-- Adicionar relação — submenu -->
-  <div class="ctx-item ctx-sub">
-    <span>🔗 Adicionar relação</span>
-    <span class="ctx-sub-arrow">▶</span>
-    <div class="ctx-submenu">
-      <!-- Conjugais -->
-      <div class="ctx-item" onclick="ctxAddBond('casamento')">
-        <span class="ctx-bond-sym">⊏⊐</span> Casamento
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('separacao')">
-        <span class="ctx-bond-sym">⊏╱⊐</span> Separação
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('divorcio')">
-        <span class="ctx-bond-sym">⊏╳⊐</span> Divórcio
-      </div>
-      <div class="ctx-sep"></div>
-      <!-- Qualitativas -->
-      <div class="ctx-item" onclick="ctxAddBond('proximo')">
-        <span class="ctx-bond-sym" style="color:#4ade80">=</span> Próximo
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('estreito')">
-        <span class="ctx-bond-sym" style="color:#4ade80">≡</span> Estreito
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('conflito')">
-        <span class="ctx-bond-sym" style="color:#f87171">W</span> Conflito
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('distante')">
-        <span class="ctx-bond-sym" style="color:#f87171">···</span> Distante
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('desavenca')">
-        <span class="ctx-bond-sym" style="color:#f87171">⊣⊢</span> Desavença
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('dominante')">
-        <span class="ctx-bond-sym">→</span> Dominante
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('generico')">
-        <span class="ctx-bond-sym">—</span> Genérico
-      </div>
-      <div class="ctx-sep"></div>
-      <!-- Gêmeos -->
-      <div class="ctx-item" onclick="ctxAddBond('gemeo')">
-        <span class="ctx-bond-sym">⌒</span> Gêmeo
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('gemeo_identico')">
-        <span class="ctx-bond-sym">⌒|</span> Gêmeo Idêntico
-      </div>
-    </div>
-  </div>
-  <div class="ctx-sep"></div>
   <div class="ctx-item" onclick="ctxEdit()">✏️ Editar / complementar ficha</div>
   <div class="ctx-item" onclick="ctxSetFocus()">⊙ Definir como pessoa foco</div>
   <div class="ctx-item" id="ctx-expand" onclick="ctxExpandGen()">⊕ Expandir genograma</div>
@@ -962,13 +892,10 @@
         <div class="pd-grid tri">
           <div class="pd-field"><label>Gênero</label>
             <select id="pd-gender">
-              <option value="M">Homem cisgênero ■</option>
-              <option value="F">Mulher cisgênero ●</option>
-              <option value="TM">Homem transgênero ◆</option>
-              <option value="TF">Mulher transgênero ◆</option>
-              <option value="NB">Não-binário ◆</option>
-              <option value="GF">Gênero fluido ◆</option>
-              <option value="AG">Agênero ◆</option>
+              <option value="M">Homem (cis)</option>
+              <option value="F">Mulher (cis)</option>
+              <option value="T">Trans / Não-binário</option>
+              <option value="NB">Não-binário</option>
               <option value="">Não informado</option>
             </select>
           </div>
@@ -1010,17 +937,10 @@
           <div class="pd-field"><label>Escolaridade</label>
             <select id="pd-edu">
               <option value="">—</option>
-              <option>Sem escolaridade</option>
-              <option>Fundamental incompleto</option>
-              <option>Fundamental completo</option>
-              <option>Médio incompleto</option>
-              <option>Médio completo</option>
-              <option>Superior incompleto</option>
-              <option>Superior completo</option>
-              <option>Pós-graduação (lato sensu)</option>
-              <option>Mestrado</option>
-              <option>Doutorado</option>
-              <option>Pós-doutorado</option>
+              <option>Sem escolaridade</option><option>Fundamental incompleto</option>
+              <option>Fundamental completo</option><option>Médio incompleto</option>
+              <option>Médio completo</option><option>Superior incompleto</option>
+              <option>Superior completo</option><option>Pós-graduação</option>
             </select>
           </div>
           <div class="pd-field"><label>Profissão / Ocupação</label><input id="pd-job" type="text"></div>
@@ -1050,8 +970,8 @@
         </div>
       </div>
 
-      <!-- Vínculo com Pessoa Foco (oculto quando é a própria pessoa foco) -->
-      <div class="pd-section" id="pd-bond-section">
+      <!-- Vínculo com Pessoa Foco -->
+      <div class="pd-section">
         <div class="pd-section-title">Vínculo com a Pessoa Foco</div>
         <div class="pd-grid">
           <div class="pd-field"><label>Qualidade do vínculo predominante</label>
@@ -1091,31 +1011,13 @@
     <h3>Adicionar vínculo</h3>
     <label>Tipo de vínculo
       <select id="bond-type">
-        <optgroup label="── Conjugal ──">
-          <option value="casamento">⊏⊐ Casamento / União estável</option>
-          <option value="separacao">⊏╱⊐ Separação</option>
-          <option value="divorcio">⊏╳⊐ Divórcio</option>
-        </optgroup>
-        <optgroup label="── Estrutural ──">
-          <option value="filiacao">↓ Filiação (pai/mãe → filho/a)</option>
-          <option value="gemeo">⌒ Gêmeo</option>
-          <option value="gemeo_identico">⌒| Gêmeo Idêntico</option>
-        </optgroup>
-        <optgroup label="── Relacional ──">
-          <option value="proximo">= Próximo</option>
-          <option value="estreito">≡ Estreito / Emaranhado</option>
-          <option value="conflito">W Conflito</option>
-          <option value="distante">··· Distante</option>
-          <option value="desavenca">⊣⊢ Desavença / Rompimento</option>
-          <option value="dominante">→ Dominante</option>
-          <option value="generico">— Genérico</option>
-        </optgroup>
-        <optgroup label="── Bowen ──">
-          <option value="bowen_coesao">Bowen — Coesão</option>
-          <option value="bowen_conflito">Bowen — Conflito</option>
-          <option value="bowen_distancia">Bowen — Distância emocional</option>
-          <option value="bowen_corte">Bowen — Corte emocional</option>
-        </optgroup>
+        <option value="casamento">Casamento / União estável</option>
+        <option value="separacao">Separação / Divórcio</option>
+        <option value="filiacao">Filiação (pai/mãe → filho/a)</option>
+        <option value="bowen_coesao">Bowen — Coesão</option>
+        <option value="bowen_conflito">Bowen — Conflito</option>
+        <option value="bowen_distancia">Bowen — Distância emocional</option>
+        <option value="bowen_corte">Bowen — Corte emocional</option>
       </select>
     </label>
     <div class="bond-pair">
@@ -1432,12 +1334,7 @@ function makeGeom(g) {
   return new THREE.OctahedronGeometry(0.92);
 }
 function makeMat(g, isFocus, isDead) {
-  const cols = {
-    M:0x2563eb, F:0xe11d7a,
-    TM:0x6d28d9, TF:0xa855f7,
-    NB:0x7c3aed, GF:0x9333ea, AG:0x64748b,
-    T:0x7c3aed  // legacy alias
-  };
+  const cols = {M:0x2563eb, F:0xe11d7a, T:0x7c3aed};
   const col = cols[g] || 0x6b7280;
   if (isDead) return new THREE.MeshPhysicalMaterial({color:col,wireframe:true,opacity:.45,transparent:true});
   if (isFocus) return new THREE.MeshPhysicalMaterial({color:0x06d6a0,metalness:.3,roughness:.2,emissive:0x02a070,emissiveIntensity:.35});
@@ -1519,7 +1416,7 @@ function arcTube(pa, mid, pb, r, color, segs) {
   return new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color}));
 }
 
-function drawMarriage(posA, posB, isSep, minGen, isDiv=false) {
+function drawMarriage(posA, posB, isSep, minGen) {
   const mid = new THREE.Vector3().addVectors(posA,posB).multiplyScalar(.5);
   const dir = new THREE.Vector3().subVectors(posB,posA).normalize();
   let perp = new THREE.Vector3().crossVectors(dir,new THREE.Vector3(0,0,1)).normalize().multiplyScalar(.16);
@@ -1532,18 +1429,10 @@ function drawMarriage(posA, posB, isSep, minGen, isDiv=false) {
     scene.add(t); objs.push(t);
   });
   if (isSep) {
-    // Primeira barra de corte
-    const slashA = mid.clone().add(new THREE.Vector3(-.3,-.55,0)).add(isDiv?new THREE.Vector3(.4,0,0):new THREE.Vector3(0,0,0));
-    const slashB = mid.clone().add(new THREE.Vector3(.3,.55,0)).add(isDiv?new THREE.Vector3(.4,0,0):new THREE.Vector3(0,0,0));
-    const s1 = tube(slashA, slashB, .07, 0xf87171);
-    scene.add(s1); objs.push(s1);
-    if (isDiv) {
-      // Segunda barra (divórcio = duas barras)
-      const slashA2 = mid.clone().add(new THREE.Vector3(-.3,-.55,0)).sub(new THREE.Vector3(.4,0,0));
-      const slashB2 = mid.clone().add(new THREE.Vector3(.3,.55,0)).sub(new THREE.Vector3(.4,0,0));
-      const s2 = tube(slashA2, slashB2, .07, 0xf87171);
-      scene.add(s2); objs.push(s2);
-    }
+    const slashA = mid.clone().add(new THREE.Vector3(-.3,-.55,0));
+    const slashB = mid.clone().add(new THREE.Vector3(.3,.55,0));
+    const s = tube(slashA, slashB, .07, 0xf87171);
+    scene.add(s); objs.push(s);
   }
   objs.forEach(o=>{ o._minGen=minGen; }); return {mid,objs};
 }
@@ -1574,107 +1463,30 @@ function drawSiblingBar(parentMid, childPositions, minGen) {
 }
 
 function drawBowen(posA, posB, btype) {
-  const cols = {
-    bowen_coesao:0x4ade80, bowen_conflito:0xf87171,
-    bowen_distancia:0x6a8aac, bowen_corte:0xff4400,
-    // Genograma relacional
-    proximo:0x4ade80, estreito:0x22c55e, conflito:0xef4444,
-    distante:0xf87171, desavenca:0xdc2626, dominante:0x94a3b8,
-    generico:0x64748b, gemeo:0x38bdf8, gemeo_identico:0x0ea5e9
-  };
+  const cols = {bowen_coesao:0x4ade80, bowen_conflito:0xf87171, bowen_distancia:0x6a8aac, bowen_corte:0xff4400};
   const color = cols[btype]||0x888888;
   const mid = new THREE.Vector3().addVectors(posA,posB).multiplyScalar(.5);
   const dist = posA.distanceTo(posB); const arcH = dist*.38;
   const cp = new THREE.Vector3(mid.x, mid.y+arcH, mid.z+arcH*.6);
   const objs = [];
-
-  // ── Bowen Conflito / Corte — zigzag ──────────────────────────
-  if (btype==='bowen_conflito'||btype==='bowen_corte'||btype==='conflito') {
+  if (btype==='bowen_conflito'||btype==='bowen_corte') {
     const curve = new THREE.CatmullRomCurve3([posA.clone(),cp.clone(),posB.clone()]);
-    const pts = curve.getPoints(22);
+    const pts = curve.getPoints(20);
     for (let i=0;i<pts.length-1;i++) {
       const p0=pts[i].clone(), p1=pts[i+1].clone();
-      const off=(i%2===0?.24:-.24); p0.z+=off; p1.z+=off;
+      const off=(i%2===0?.22:-.22); p0.z+=off; p1.z+=off;
       const seg=tube(p0,p1,.065,color); scene.add(seg); objs.push(seg);
     }
-
-  // ── Distante — pontilhado ─────────────────────────────────────
-  } else if (btype==='bowen_distancia'||btype==='distante') {
+  } else if (btype==='bowen_distancia') {
     const curve = new THREE.CatmullRomCurve3([posA.clone(),cp.clone(),posB.clone()]);
-    const pts = curve.getPoints(28);
+    const pts = curve.getPoints(26);
     for (let i=0;i<pts.length-1;i+=2) {
-      const seg=tube(pts[i].clone(),pts[i+1].clone(),.045,color);
+      const seg=tube(pts[i].clone(),pts[i+1].clone(),.045,color,true);
       scene.add(seg); objs.push(seg);
     }
-
-  // ── Próximo — dupla linha verde ──────────────────────────────
-  } else if (btype==='proximo') {
-    const curve = new THREE.CatmullRomCurve3([posA.clone(),cp.clone(),posB.clone()]);
-    const pts = curve.getPoints(18);
-    [-.14,.14].forEach(off => {
-      for (let i=0;i<pts.length-1;i++) {
-        const p0=pts[i].clone(), p1=pts[i+1].clone();
-        p0.z+=off; p1.z+=off;
-        const seg=tube(p0,p1,.06,color); scene.add(seg); objs.push(seg);
-      }
-    });
-
-  // ── Estreito — tripla linha verde ────────────────────────────
-  } else if (btype==='estreito') {
-    const curve = new THREE.CatmullRomCurve3([posA.clone(),cp.clone(),posB.clone()]);
-    const pts = curve.getPoints(18);
-    [-.22,0,.22].forEach(off => {
-      for (let i=0;i<pts.length-1;i++) {
-        const p0=pts[i].clone(), p1=pts[i+1].clone();
-        p0.z+=off; p1.z+=off;
-        const seg=tube(p0,p1,.055,color); scene.add(seg); objs.push(seg);
-      }
-    });
-
-  // ── Desavença — barras T nas pontas ──────────────────────────
-  } else if (btype==='desavenca') {
-    const m=arcTube(posA,cp,posB,.055,color,14); scene.add(m); objs.push(m);
-    // Duas barras verticais perpendiculares (T nos extremos)
-    const dir = new THREE.Vector3().subVectors(posB,posA).normalize();
-    const perp = new THREE.Vector3(-dir.y,dir.x,0).normalize().multiplyScalar(.9);
-    [posA,posB].forEach(p => {
-      const t1=tube(p.clone().add(perp), p.clone().sub(perp), .09, color);
-      scene.add(t1); objs.push(t1);
-    });
-
-  // ── Dominante — linha com seta ───────────────────────────────
-  } else if (btype==='dominante') {
-    const m=arcTube(posA,cp,posB,.06,color,14); scene.add(m); objs.push(m);
-    // Cone seta em posB
-    const dir2 = new THREE.Vector3().subVectors(posB,cp).normalize();
-    const arrowGeom = new THREE.ConeGeometry(.22,.55,6);
-    const arrowMat  = new THREE.MeshPhysicalMaterial({color,metalness:.2,roughness:.5});
-    const arrow = new THREE.Mesh(arrowGeom,arrowMat);
-    arrow.position.copy(posB.clone().add(dir2.clone().multiplyScalar(.4)));
-    const up = new THREE.Vector3(0,1,0);
-    const quat = new THREE.Quaternion().setFromUnitVectors(up,dir2);
-    arrow.setRotationFromQuaternion(quat);
-    arrow.visible=false; scene.add(arrow); objs.push(arrow);
-
-  // ── Gêmeo — arco reto entre dois irmãos ──────────────────────
-  } else if (btype==='gemeo'||btype==='gemeo_identico') {
-    const cpLow = new THREE.Vector3(mid.x, mid.y-arcH*.5, mid.z+2);
-    const m=arcTube(posA,cpLow,posB,.07,color,14); scene.add(m); objs.push(m);
-    if (btype==='gemeo_identico') {
-      // Barra vertical no pico
-      const barT=tube(cpLow.clone().add(new THREE.Vector3(0,.9,0)), cpLow.clone().sub(new THREE.Vector3(0,.9,0)), .09,color);
-      scene.add(barT); objs.push(barT);
-    }
-
-  // ── Genérico — linha simples ──────────────────────────────────
-  } else if (btype==='generico') {
-    const m=tube(posA.clone(),posB.clone(),.06,color); scene.add(m); objs.push(m);
-
-  // ── Bowen Coesão — arco suave ────────────────────────────────
   } else {
     const m=arcTube(posA,cp,posB,.075,color,18); scene.add(m); objs.push(m);
   }
-
   objs.forEach(o=>{ o.visible=false; }); return objs;
 }
 
@@ -1706,11 +1518,11 @@ function initScene() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
   camera = new THREE.PerspectiveCamera(55,W/H,.1,200);
-  camera.position.set(0,22,75); camera.lookAt(0,4,0);
+  camera.position.set(0,12,28); camera.lookAt(0,2,0);
   controls = new THREE.OrbitControls(camera,renderer.domElement);
-  controls.target.set(0,4,0); controls.enableDamping=true;
-  controls.dampingFactor=.08; controls.minDistance=14;
-  controls.maxDistance=180; controls.maxPolarAngle=Math.PI*.84;
+  controls.target.set(0,2,0); controls.enableDamping=true;
+  controls.dampingFactor=.08; controls.minDistance=6;
+  controls.maxDistance=75; controls.maxPolarAngle=Math.PI*.84;
   controls.update();
   scene.add(new THREE.AmbientLight(0x1a2a4a,1.2));
   const dir = new THREE.DirectionalLight(0x8ab4d8,.8);
@@ -1766,22 +1578,13 @@ function populateScene() {
   initExtGenograms();
 }
 
-// Tipos que são desenhados como arco relacional (bowenLayer)
-const REL_BOND_TYPES = new Set([
-  'bowen_coesao','bowen_conflito','bowen_distancia','bowen_corte',
-  'proximo','estreito','conflito','distante','desavenca','dominante','generico',
-  'gemeo','gemeo_identico'
-]);
-
 function drawAllBonds() {
   const marriageMids = {};
   BONDS.forEach(b => {
-    if (b.type!=='casamento'&&b.type!=='separacao'&&b.type!=='divorcio') return;
+    if (b.type!=='casamento'&&b.type!=='separacao') return;
     const nA=nodeMap[b.a], nB=nodeMap[b.b]; if (!nA||!nB) return;
     const minGen=Math.min(nA.data.gen,nB.data.gen);
-    const isSep = b.type==='separacao'||b.type==='divorcio';
-    const isDiv = b.type==='divorcio';
-    const {mid,objs}=drawMarriage(nA.mesh.position.clone(),nB.mesh.position.clone(),isSep,minGen,isDiv);
+    const {mid,objs}=drawMarriage(nA.mesh.position.clone(),nB.mesh.position.clone(),b.type!=='casamento',minGen);
     marriageMids[[b.a,b.b].sort().join('|')]=mid;
     genLayer.push(...objs); buildGenByMinGen(minGen,objs);
   });
@@ -1812,7 +1615,7 @@ function drawAllBonds() {
     genLayer.push(...objs); buildGenByMinGen(minGen,objs);
   });
   BONDS.forEach(b => {
-    if (!REL_BOND_TYPES.has(b.type)) return;
+    if (!b.type.startsWith('bowen_')) return;
     const nA=nodeMap[b.a], nB=nodeMap[b.b]; if (!nA||!nB) return;
     bowenLayer.push(...drawBowen(nA.mesh.position.clone(),nB.mesh.position.clone(),b.type));
   });
@@ -1915,28 +1718,13 @@ function animate() {
   const t=clock.getElapsedTime();
   PEOPLE.forEach(d => {
     const e=nodeMap[d.id]; if (!e||d.deceased) return;
-    // Float suave + rotação Y lenta (mesmo padrão do demo Sofia)
-    e.mesh.position.y = d.y + Math.sin(t*.8 + e.mesh._floatOff) * .14;
-    e.mesh.rotation.y = t * (d.focus ? 0.18 : 0.12) + e.mesh._floatOff * .3;
-    // Leve inclinação X oscilante — dá vida sem exagero
-    e.mesh.rotation.x = Math.sin(t*.5 + e.mesh._floatOff) * .04;
+    e.mesh.position.y=d.y+Math.sin(t*.8+e.mesh._floatOff)*.12;
   });
   ECO_NODES.forEach(d => {
     const e=nodeMap[d.id]; if (!e) return;
     e.mesh.position.y=d.y+Math.sin(t*.6+e.mesh._floatOff)*.1;
     e.mesh.rotation.y=t*.4;
   });
-  // Pulso no anel da Pessoa Foco
-  const fp = PEOPLE.find(p=>p.focus);
-  if (fp) {
-    const fe = nodeMap[fp.id];
-    if (fe) {
-      const ring = fe.mesh.children.find(c=>c.geometry&&c.geometry.type==='TorusGeometry');
-      if (ring && ring.material) {
-        ring.material.emissiveIntensity = .4 + Math.sin(t*1.4)*.3;
-      }
-    }
-  }
   // Float extended nodes
   Object.values(extNodeMap).forEach(({mesh,data}) => {
     if (!mesh.visible||!data) return;
@@ -2194,7 +1982,7 @@ function expandPerson(id) {
   // Fly camera to this person
   const pos=entry.mesh.position;
   controls.target.set(pos.x, pos.y, pos.z);
-  camera.position.set(pos.x, pos.y+12, pos.z+38);
+  camera.position.set(pos.x, pos.y+6, pos.z+18);
   controls.update();
   // Open their info panel
   showInfo(entry.data);
@@ -2228,14 +2016,6 @@ function goBack() {
 function populateBlFamList() {
   const container=document.getElementById('blc-fam-list'); if (!container) return;
   container.innerHTML='';
-  // Atualiza nome da família a partir da Pessoa Foco
-  const focusPerson = PEOPLE.find(p => p.role==='Pessoa Foco');
-  const titleEl = document.getElementById('blc-fam-title');
-  if (titleEl && focusPerson) {
-    const parts = focusPerson.name.trim().split(/\s+/);
-    const surname = parts.length > 1 ? parts[parts.length-1] : parts[0];
-    titleEl.innerHTML = 'Família ' + surname + ' · <span id="bl-bond-count">—</span> vínculos';
-  }
   PEOPLE.forEach(p => {
     const col=GENDER_COL[p.gender]||'#6b7280';
     const hasExt = EXTENDED_GENOGRAMS[p.id] && EXTENDED_GENOGRAMS[p.id].nodes.length>0;
@@ -2589,44 +2369,9 @@ function onRelChange(rel) {
   }
 }
 function openAddModal() {
-  const hasFocus = PEOPLE.find(p => p.focus);
-  const title    = document.getElementById('add-modal-title');
-  const hint     = document.getElementById('add-focus-hint');
-  const relRow   = document.getElementById('add-rel-row');
-  const genRow   = document.getElementById('add-gen-row');
-  const focusRow = document.getElementById('add-focus-row');
-  const partRow  = document.getElementById('add-partner-row');
-  const ctxWrap  = document.getElementById('add-ctx-wrap');
-  const birthLbl = document.getElementById('add-birth-lbl');
-
-  if (!hasFocus) {
-    // Modo: primeira pessoa = Pessoa Foco
-    title.textContent = 'Quem é você?';
-    hint.style.display = 'block';
-    relRow.style.display   = 'none';
-    genRow.style.display   = 'none';
-    focusRow.style.display = 'none';
-    partRow.style.display  = 'none';
-    ctxWrap.setAttribute('hidden','');
-    if (birthLbl) birthLbl.firstChild.textContent = 'Ano de nascimento ';
-    document.getElementById('add-focus').checked = true;
-    // Reset campos irrelevantes
-    document.getElementById('add-dec').value = '';
-    document.getElementById('add-name').value = '';
-    document.getElementById('add-birth').value = '';
-  } else {
-    // Modo: adicionar familiar
-    title.textContent = 'Adicionar ao genograma';
-    hint.style.display = 'none';
-    relRow.style.display   = '';
-    genRow.style.display   = '';
-    focusRow.style.display = 'flex';
-    partRow.style.display  = '';
-    document.getElementById('add-focus').checked = false;
-    refreshPartnerSelect(); refreshBondSelects();
-    const rel = document.getElementById('add-rel').value;
-    onRelChange(rel);
-  }
+  refreshPartnerSelect(); refreshBondSelects();
+  const rel = document.getElementById('add-rel').value;
+  onRelChange(rel);
   document.getElementById('add-modal').removeAttribute('hidden');
 }
 
@@ -2655,7 +2400,7 @@ function confirmAddService() {
   // Find a free position for the eco node (offset in Z to separate from family)
   const existingEcoX = ECO_NODES.map(n => n.x);
   let newX = 0;
-  for (let candidate = -28; candidate <= 28; candidate += 9) {
+  for (let candidate = -12; candidate <= 12; candidate += 3.5) {
     if (!existingEcoX.includes(candidate)) { newX = candidate; break; }
   }
   const ecoId = 'svc_' + Date.now();
@@ -2664,18 +2409,16 @@ function confirmAddService() {
 
   // Build mesh and add to scene
   const mesh = buildEcoMesh(ecoD);
+  mesh.visible = true;
   scene.add(mesh);
-  ecoMeshes.push(mesh);   // ← registrar para applyLayers() controlar visibilidade
   const label = buildLabel(ecoId, name, false);
-  nodeMap[ecoId] = { mesh, label, data: ecoD };  // ← registrar no nodeMap
 
   // Draw bond to person if selected
   if (personId && nodeMap[personId]) {
     const personData = nodeMap[personId].data;
     const posA = new THREE.Vector3(personData.x, personData.y, personData.z);
     const posB = new THREE.Vector3(ecoD.x, ecoD.y, ecoD.z);
-    const bond = drawEcoBond(posA, posB, type, strength);
-    if (bond) ecoLayer.push(bond);   // ← registrar vínculo para ser controlado pela camada
+    drawEcoBond(posA, posB, type, strength);
     ECO_BONDS.push({ from: personId, to: ecoId, type, strength });
   }
 
@@ -2707,69 +2450,16 @@ function confirmAdd() {
   const genSel=parseInt(document.getElementById('add-gen').value)||3;
   const isFocus=document.getElementById('add-focus').checked;
   const partner=document.getElementById('add-partner').value;
-  // Se for focus, rebaixar foco anterior
+  // Auto-position: Y by gen, X spread among existing gen members
+  const GEN_Y={1:9,2:2,3:-5,4:-11,5:-17};
+  const y=GEN_Y[genSel]??(-5);
+  const sameGen=PEOPLE.filter(p=>p.gen===genSel);
+  const x= sameGen.length===0 ? 0 : (sameGen[sameGen.length-1].x + 3.5);
+  const z=0;
+  // If set as focus, demote previous focus. If no focus exists yet, auto-assign.
   const autoFocus = PEOPLE.length===0 || isFocus;
   if (autoFocus) { PEOPLE.forEach(p=>{ if(p.focus){p.focus=false; if(nodeMap[p.id]) nodeMap[p.id].mesh.userData.isFocus=false;} }); }
-
-  // ── Posicionamento estrutural: mesmo sistema do voiceBuild ────────────────
-  // Mapeamento role modal → chave FIXED_POS
-  const ROLE_TO_FIXED = {
-    'Pai':'Pai','Mãe':'Mãe','Cônjuge':'Cônjuge',
-    'Avô paterno':'Avô Paterno','Avó paterna':'Avó Paterna',
-    'Avô materno':'Avô Materno','Avó materna':'Avó Materna',
-    'Bisavô':'Bisavô','Bisavó':'Bisavó',
-  };
-  const FP = {
-    'Bisavô':      {x:-32,y:38,z:0},'Bisavó':      {x:-18,y:38,z:0},
-    'Avô Paterno': {x:-20,y:22,z:0},'Avó Paterna': {x:-8, y:22,z:0},
-    'Avô Materno': {x:8,  y:22,z:0},'Avó Materna': {x:20, y:22,z:0},
-    'Pai':         {x:-8, y:6, z:0},'Mãe':         {x:8,  y:6, z:0},
-    'Pessoa Foco': {x:0,  y:-10,z:0},'Cônjuge':    {x:18, y:-10,z:0},
-  };
-  const GEN_Y = {1:22,2:6,3:-10,4:-24,5:-36};
-
-  let px,py,pz;
-  const fixedKey = autoFocus ? 'Pessoa Foco' : ROLE_TO_FIXED[rel];
-
-  if (fixedKey && FP[fixedKey]) {
-    // Roles com posição fixa: mover à direita se já existir um igual
-    const fp = FP[fixedKey];
-    const prevCount = PEOPLE.filter(p=>(autoFocus?p.focus:p.role===rel)).length;
-    px = fp.x + prevCount*12; py = fp.y; pz = fp.z;
-
-  } else if (rel==='Irmão'||rel==='Irmã') {
-    // Irmãos: expandir à esquerda da pessoa foco
-    const sibIdx = PEOPLE.filter(p=>p.role==='Irmão'||p.role==='Irmã').length;
-    px = -12*(sibIdx+1); py = -10; pz = 0;
-
-  } else if (rel==='Filho/a') {
-    // Filhos: centralizar abaixo do eixo foco+cônjuge
-    const children = PEOPLE.filter(p=>p.role==='Filho/a');
-    const total = children.length+1;
-    const baseX = 9;
-    px = baseX + (children.length - (total-1)/2)*12; py = -24; pz = 0;
-
-  } else if (rel==='Neto/a') {
-    const netos = PEOPLE.filter(p=>p.role==='Neto/a');
-    px = (netos.length - netos.length/2)*12; py = -36; pz = 0;
-
-  } else if (rel==='Tio'||rel==='Tia') {
-    const tios = PEOPLE.filter(p=>p.role==='Tio'||p.role==='Tia');
-    px = -26-tios.length*12; py = 6; pz = 10;
-
-  } else if (rel==='Primo/a') {
-    const primos = PEOPLE.filter(p=>p.role==='Primo/a');
-    px = -26-primos.length*12; py = -10; pz = 10;
-
-  } else {
-    // Fallback genérico: distribuir por geração com passo largo
-    const yPos = GEN_Y[genSel]??(-10);
-    const sameGen = PEOPLE.filter(p=>p.gen===genSel);
-    const lastX = sameGen.length>0 ? sameGen[sameGen.length-1].x : -6;
-    px = lastX+12; py = yPos; pz = 0;
-  }
-
-  const d={id:'p_'+(nextId++),name,gender,birth,deceased,role:rel,gen:genSel,x:px,y:py,z:pz,focus:autoFocus};
+  const d={id:'p_'+(nextId++),name,gender,birth,deceased,role:rel,gen:genSel,x,y,z,focus:autoFocus};
   PEOPLE.push(d);
   const mesh=buildNodeMesh(d); scene.add(mesh);
   const label=buildLabel(d.id,d.name,isFocus);
@@ -2844,22 +2534,11 @@ function refreshBondSelects(){
 function updateBondUI(){
   const t=document.getElementById('bond-type').value;
   const isFil=t==='filiacao';
+  const hasSep=t==='separacao';
   document.getElementById('bond-filiacao-extra').style.display=isFil?'block':'none';
-  document.getElementById('bond-year-lbl').style.display='none';
+  document.getElementById('bond-year-lbl').style.display=(hasSep||isFil)?'none':'none';
   document.getElementById('bond-lbl-mid').textContent=
-    t==='casamento'||t==='separacao'||t==='divorcio'?'↔':t==='filiacao'?'→':'↔';
-}
-
-// Abre o bond-modal com tipo pré-selecionado e Pessoa A = ctxPersonId
-function ctxAddBond(type) {
-  hideCtxMenu();
-  refreshBondSelects();
-  const typeEl = document.getElementById('bond-type');
-  if (typeEl) typeEl.value = type;
-  const bA = document.getElementById('bond-a');
-  if (bA && ctxPersonId) bA.value = ctxPersonId;
-  updateBondUI();
-  document.getElementById('bond-modal').removeAttribute('hidden');
+    t==='casamento'||t==='separacao'?'↔':t==='filiacao'?'→':'↔';
 }
 document.addEventListener('change',e=>{
   if(e.target&&e.target.id==='bond-type') updateBondUI();
@@ -2892,19 +2571,18 @@ function confirmBond(){
         genLayer.push(arc2);
       }
     }
-  } else if(type==='casamento'||type==='separacao'||type==='divorcio'){
+  } else if(type==='casamento'||type==='separacao'){
     const bond={type,a,b}; if(year) bond.year=year;
     BONDS.push(bond);
     const pa=nodeMap[a]?.mesh?.position; const pb=nodeMap[b]?.mesh?.position;
     if(pa&&pb){
-      const isS=type==='separacao'||type==='divorcio';
-      const isD=type==='divorcio';
+      const isS=type==='separacao';
       const minG=Math.min(nodeMap[a]?.data?.gen??2,nodeMap[b]?.data?.gen??2);
-      const {objs}=drawMarriage(pa,pb,isS,minG,isD);
+      const {objs}=drawMarriage(pa,pb,isS,minG);
       genLayer.push(...objs); buildGenByMinGen(minG,objs);
     }
   } else {
-    // Relacional / Bowen
+    // Bowen
     const bond={type,a,b}; BONDS.push(bond);
     const pa=nodeMap[a]?.mesh?.position; const pb=nodeMap[b]?.mesh?.position;
     if(pa&&pb){
@@ -2929,11 +2607,6 @@ function drawTube(pa,pb,col,rad,opacity){
 // ════════════════════════════════════════════════════
 // NEW GENOGRAM (builder mode)
 // ════════════════════════════════════════════════════
-function goHome(){
-  // Mostra a tela de boas-vindas SEM apagar o genograma atual
-  document.getElementById('welcome').classList.remove('gone');
-}
-
 function startNewGenogram(){
   // confirm() always returns false in local/artifact environments — skip it
   document.getElementById('welcome').classList.add('gone');
@@ -3169,21 +2842,18 @@ function voiceBuild() {
   const ecoNodes   = voiceParsed.filter(p => ecoRoles.has(p.role));
 
   // ── Fixed single-person role positions ───────────────────────────────────
-  //   Paternal side left, maternal side right — classic genogram convention.
-  //   Core family chain (avós → pais → foco → filhos) stays at z:0 so
-  //   drawSiblingBar remains flat and bonds look clean. Secondary nodes
-  //   (tios/primos/eco) use positive z to create visible 3D depth on pan/rotate.
+  //   Paternal side left, maternal side right — classic genogram convention
   const FIXED_POS = {
-    'Bisavô':        {x:-32, y:38, z:0},
-    'Bisavó':        {x:-18, y:38, z:0},
-    'Avô Paterno':   {x:-20, y:22, z:0},
-    'Avó Paterna':   {x:-8,  y:22, z:0},
-    'Avô Materno':   {x:8,   y:22, z:0},
-    'Avó Materna':   {x:20,  y:22, z:0},
-    'Pai':           {x:-8,  y:6,  z:0},
-    'Mãe':           {x:8,   y:6,  z:0},
-    'Pessoa Foco':   {x:0,   y:-10,z:0},
-    'Cônjuge':       {x:18,  y:-10,z:0},
+    'Bisavô':        {x:-9, y:16, z:0},
+    'Bisavó':        {x:-6, y:16, z:0},
+    'Avô Paterno':   {x:-6, y:9,  z:0},
+    'Avó Paterna':   {x:-2.5,y:9, z:0},
+    'Avô Materno':   {x:2.5, y:9, z:0},
+    'Avó Materna':   {x:6,   y:9, z:0},
+    'Pai':           {x:-3,  y:2, z:0},
+    'Mãe':           {x:3,   y:2, z:0},
+    'Pessoa Foco':   {x:0,   y:-5,z:0},
+    'Cônjuge':       {x:6,   y:-5,z:0},
   };
 
   const created = {};   // role → data object (single-instance roles)
@@ -3195,7 +2865,7 @@ function voiceBuild() {
   const posReg = new Set();
   function uniqPos(x, y, z) {
     let zOff = 0;
-    while (posReg.has(`${Math.round(x)}_${Math.round(y)}_${Math.round(z+zOff)}`)) zOff += 6;
+    while (posReg.has(`${Math.round(x)}_${Math.round(y)}_${Math.round(z+zOff)}`)) zOff += 2.5;
     posReg.add(`${Math.round(x)}_${Math.round(y)}_${Math.round(z+zOff)}`);
     return {x, y, z: z+zOff};
   }
@@ -3224,51 +2894,50 @@ function voiceBuild() {
       const fp = FIXED_POS[role];
       // For repeated same role (e.g. ex-Cônjuge), shift right then z-offset via uniqPos
       const prevCount = (createdMulti[role]||[]).length;
-      const {x,y,z} = uniqPos(fp.x + prevCount*12, fp.y, fp.z);
+      const {x,y,z} = uniqPos(fp.x + prevCount*3.5, fp.y, fp.z);
       d = addNode(pd, x, y, z);
       created[role] = d;
       (createdMulti[role]||(createdMulti[role]=[])).push(d);
 
     } else if (role==='Irmã' || role==='Irmão') {
       const idx = siblings.indexOf(pd);
-      // Spread siblings LEFT of focus; z:0 keeps sibling bar flat and bonds clean
-      const {x,y,z} = uniqPos(-12*(idx+1), -10, 0);
+      // Spread siblings to the LEFT of focus; each step -3.5 on X
+      const {x,y,z} = uniqPos(-3.5*(idx+1), -5, 0);
       d = addNode(pd, x, y, z);
       (createdMulti[role]||(createdMulti[role]=[])).push(d);
 
     } else if (role==='Filho/a') {
       const idx = children.indexOf(pd);
       const total = children.length;
-      // Center filhos below focus+cônjuge midpoint (x≈9), wider 12-unit spacing, z:0 for clean bonds
-      const baseX = 9 + (idx - (total-1)/2)*12;
-      const {x,y,z} = uniqPos(baseX, -24, 0);
+      // Center filhos below focus+cônjuge midpoint (x≈3)
+      const baseX = 3 + (idx - (total-1)/2)*3.5;
+      const {x,y,z} = uniqPos(baseX, -11, 0);
       d = addNode(pd, x, y, z);
       (createdMulti['Filho/a']||(createdMulti['Filho/a']=[])).push(d);
 
     } else if (role==='Neto/a') {
       const idx = grandkids.indexOf(pd);
       const total = grandkids.length;
-      const {x,y,z} = uniqPos((idx-(total-1)/2)*12, -36, 0);
+      const {x,y,z} = uniqPos((idx-(total-1)/2)*3.5, -17, 0);
       d = addNode(pd, x, y, z);
       (createdMulti['Neto/a']||(createdMulti['Neto/a']=[])).push(d);
 
     } else if (role==='Tio' || role==='Tia') {
       const idx = uncles.indexOf(pd);
-      // Tios far left + z:10 depth — visually separated from o plano z:0
-      const {x,y,z} = uniqPos(-26 - idx*12, 6, 10);
+      // Spread uncles/aunts further left on gen2, slight Z depth
+      const {x,y,z} = uniqPos(-7.5 - idx*3.5, 2, 1.5);
       d = addNode(pd, x, y, z);
       (createdMulti[role]||(createdMulti[role]=[])).push(d);
 
     } else if (role==='Sobrinho/a') {
       const sobrIdx = (createdMulti['Sobrinho/a']||[]).length;
-      const {x,y,z} = uniqPos(-26 - sobrIdx*12, -24, 10);
+      const {x,y,z} = uniqPos(-7.5 - sobrIdx*3, -11, 1.5);
       d = addNode(pd, x, y, z);
       (createdMulti['Sobrinho/a']||(createdMulti['Sobrinho/a']=[])).push(d);
 
     } else if (role==='Primo/a') {
       const idx = cousins.indexOf(pd);
-      // Primos far left + z:10 — mesma Y da geração focal mas plano z separado dos irmãos
-      const {x,y,z} = uniqPos(-26 - idx*12, -10, 10);
+      const {x,y,z} = uniqPos(-7.5 - idx*3, -5, 1.5);
       d = addNode(pd, x, y, z);
       (createdMulti['Primo/a']||(createdMulti['Primo/a']=[])).push(d);
 
@@ -3873,10 +3542,10 @@ function openPersonDetail(pid){
   if(hdrName) hdrName.textContent=d.name||'';
   const hdrRole=document.getElementById('pd-hdr-role');
   if(hdrRole) hdrRole.textContent=(d.role||'')+(d.gen?' · G'+d.gen:'');
-  const ICONS={M:'■',F:'●',TM:'◆',TF:'◆',NB:'◆',GF:'◆',AG:'◆',T:'◆'};
-  const COLORS={M:'#2563eb',F:'#e11d7a',TM:'#6d28d9',TF:'#a855f7',NB:'#7c3aed',GF:'#9333ea',AG:'#64748b',T:'#7c3aed'};
+  const ICONS={M:'■',F:'●',T:'◆'};
+  const COLORS={M:'#2563eb',F:'#e11d7a',T:'#7c3aed'};
   const icon=document.getElementById('pd-icon');
-  if(icon){ icon.textContent=ICONS[d.gender]||'●'; icon.style.color=COLORS[d.gender]||'#6b7280'; }
+  if(icon){ icon.textContent=ICONS[d.gender]||'?'; icon.style.color=COLORS[d.gender]||'#6b7280'; }
   const setV=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v||''; };
   const setC=(id,v)=>{ const el=document.getElementById(id); if(el) el.checked=!!v; };
   setV('pd-name',d.name); setV('pd-surname',d.surname); setV('pd-nickname',d.nickname);
@@ -3888,9 +3557,6 @@ function openPersonDetail(pid){
   setV('pd-death-year',d.death); setV('pd-death-cause',d.deathCause);
   setV('pd-bond-qual',d.bondQual); setV('pd-contact',d.contact);
   setV('pd-notes',d.notes);
-  // Vínculo com Pessoa Foco: sem sentido quando é a própria pessoa foco
-  const bondSec = document.getElementById('pd-bond-section');
-  if (bondSec) bondSec.style.display = (d.focus || d.role==='Pessoa Foco') ? 'none' : '';
   document.getElementById('person-detail').classList.add('on');
 }
 

@@ -119,26 +119,16 @@
 
     /* ── CONTEXT MENU ─────────────────────────── */
     #ctx-menu { position:fixed; background:rgba(11,19,37,.98); border:1px solid var(--border2);
-      border-radius:9px; padding:5px 0; z-index:500; display:none; min-width:190px;
+      border-radius:9px; padding:5px 0; z-index:500; display:none; min-width:180px;
       box-shadow:0 12px 32px rgba(0,0,0,.6); backdrop-filter:blur(14px); }
     #ctx-menu.on { display:block; }
     .ctx-item { padding:8px 16px; font-size:12px; color:var(--text2); cursor:pointer;
-      transition:background .15s; display:flex; align-items:center; gap:8px; position:relative; }
+      transition:background .15s; display:flex; align-items:center; gap:8px; }
     .ctx-item:hover { background:rgba(255,255,255,.06); color:var(--text); }
     .ctx-item.danger { color:var(--red); }
     .ctx-item.danger:hover { background:rgba(248,113,113,.08); }
     .ctx-sep { height:1px; background:var(--border); margin:4px 8px; }
     .ctx-name { padding:8px 16px; font-size:11px; color:var(--dim); font-style:italic; }
-    /* Submenu */
-    .ctx-sub { position:relative; }
-    .ctx-sub-arrow { margin-left:auto; opacity:.5; font-size:10px; }
-    .ctx-submenu { position:absolute; left:100%; top:-5px; background:rgba(11,19,37,.99);
-      border:1px solid var(--border2); border-radius:9px; padding:5px 0; min-width:180px;
-      box-shadow:0 12px 32px rgba(0,0,0,.7); display:none; z-index:501; }
-    .ctx-sub:hover .ctx-submenu { display:block; }
-    .ctx-submenu .ctx-item { padding:7px 14px; font-size:11.5px; }
-    .ctx-submenu .ctx-sep { margin:3px 8px; }
-    .ctx-bond-sym { font-size:11px; opacity:.7; min-width:22px; text-align:center; }
 
     /* ── PERSON DETAIL MODAL ──────────────────── */
     #person-detail { position:fixed; inset:0; background:rgba(6,12,24,.7);
@@ -882,55 +872,6 @@
 <div id="ctx-menu">
   <div class="ctx-name" id="ctx-name">—</div>
   <div class="ctx-sep"></div>
-  <!-- Adicionar relação — submenu -->
-  <div class="ctx-item ctx-sub">
-    <span>🔗 Adicionar relação</span>
-    <span class="ctx-sub-arrow">▶</span>
-    <div class="ctx-submenu">
-      <!-- Conjugais -->
-      <div class="ctx-item" onclick="ctxAddBond('casamento')">
-        <span class="ctx-bond-sym">⊏⊐</span> Casamento
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('separacao')">
-        <span class="ctx-bond-sym">⊏╱⊐</span> Separação
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('divorcio')">
-        <span class="ctx-bond-sym">⊏╳⊐</span> Divórcio
-      </div>
-      <div class="ctx-sep"></div>
-      <!-- Qualitativas -->
-      <div class="ctx-item" onclick="ctxAddBond('proximo')">
-        <span class="ctx-bond-sym" style="color:#4ade80">=</span> Próximo
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('estreito')">
-        <span class="ctx-bond-sym" style="color:#4ade80">≡</span> Estreito
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('conflito')">
-        <span class="ctx-bond-sym" style="color:#f87171">W</span> Conflito
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('distante')">
-        <span class="ctx-bond-sym" style="color:#f87171">···</span> Distante
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('desavenca')">
-        <span class="ctx-bond-sym" style="color:#f87171">⊣⊢</span> Desavença
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('dominante')">
-        <span class="ctx-bond-sym">→</span> Dominante
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('generico')">
-        <span class="ctx-bond-sym">—</span> Genérico
-      </div>
-      <div class="ctx-sep"></div>
-      <!-- Gêmeos -->
-      <div class="ctx-item" onclick="ctxAddBond('gemeo')">
-        <span class="ctx-bond-sym">⌒</span> Gêmeo
-      </div>
-      <div class="ctx-item" onclick="ctxAddBond('gemeo_identico')">
-        <span class="ctx-bond-sym">⌒|</span> Gêmeo Idêntico
-      </div>
-    </div>
-  </div>
-  <div class="ctx-sep"></div>
   <div class="ctx-item" onclick="ctxEdit()">✏️ Editar / complementar ficha</div>
   <div class="ctx-item" onclick="ctxSetFocus()">⊙ Definir como pessoa foco</div>
   <div class="ctx-item" id="ctx-expand" onclick="ctxExpandGen()">⊕ Expandir genograma</div>
@@ -1091,31 +1032,13 @@
     <h3>Adicionar vínculo</h3>
     <label>Tipo de vínculo
       <select id="bond-type">
-        <optgroup label="── Conjugal ──">
-          <option value="casamento">⊏⊐ Casamento / União estável</option>
-          <option value="separacao">⊏╱⊐ Separação</option>
-          <option value="divorcio">⊏╳⊐ Divórcio</option>
-        </optgroup>
-        <optgroup label="── Estrutural ──">
-          <option value="filiacao">↓ Filiação (pai/mãe → filho/a)</option>
-          <option value="gemeo">⌒ Gêmeo</option>
-          <option value="gemeo_identico">⌒| Gêmeo Idêntico</option>
-        </optgroup>
-        <optgroup label="── Relacional ──">
-          <option value="proximo">= Próximo</option>
-          <option value="estreito">≡ Estreito / Emaranhado</option>
-          <option value="conflito">W Conflito</option>
-          <option value="distante">··· Distante</option>
-          <option value="desavenca">⊣⊢ Desavença / Rompimento</option>
-          <option value="dominante">→ Dominante</option>
-          <option value="generico">— Genérico</option>
-        </optgroup>
-        <optgroup label="── Bowen ──">
-          <option value="bowen_coesao">Bowen — Coesão</option>
-          <option value="bowen_conflito">Bowen — Conflito</option>
-          <option value="bowen_distancia">Bowen — Distância emocional</option>
-          <option value="bowen_corte">Bowen — Corte emocional</option>
-        </optgroup>
+        <option value="casamento">Casamento / União estável</option>
+        <option value="separacao">Separação / Divórcio</option>
+        <option value="filiacao">Filiação (pai/mãe → filho/a)</option>
+        <option value="bowen_coesao">Bowen — Coesão</option>
+        <option value="bowen_conflito">Bowen — Conflito</option>
+        <option value="bowen_distancia">Bowen — Distância emocional</option>
+        <option value="bowen_corte">Bowen — Corte emocional</option>
       </select>
     </label>
     <div class="bond-pair">
@@ -1519,7 +1442,7 @@ function arcTube(pa, mid, pb, r, color, segs) {
   return new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color}));
 }
 
-function drawMarriage(posA, posB, isSep, minGen, isDiv=false) {
+function drawMarriage(posA, posB, isSep, minGen) {
   const mid = new THREE.Vector3().addVectors(posA,posB).multiplyScalar(.5);
   const dir = new THREE.Vector3().subVectors(posB,posA).normalize();
   let perp = new THREE.Vector3().crossVectors(dir,new THREE.Vector3(0,0,1)).normalize().multiplyScalar(.16);
@@ -1532,18 +1455,10 @@ function drawMarriage(posA, posB, isSep, minGen, isDiv=false) {
     scene.add(t); objs.push(t);
   });
   if (isSep) {
-    // Primeira barra de corte
-    const slashA = mid.clone().add(new THREE.Vector3(-.3,-.55,0)).add(isDiv?new THREE.Vector3(.4,0,0):new THREE.Vector3(0,0,0));
-    const slashB = mid.clone().add(new THREE.Vector3(.3,.55,0)).add(isDiv?new THREE.Vector3(.4,0,0):new THREE.Vector3(0,0,0));
-    const s1 = tube(slashA, slashB, .07, 0xf87171);
-    scene.add(s1); objs.push(s1);
-    if (isDiv) {
-      // Segunda barra (divórcio = duas barras)
-      const slashA2 = mid.clone().add(new THREE.Vector3(-.3,-.55,0)).sub(new THREE.Vector3(.4,0,0));
-      const slashB2 = mid.clone().add(new THREE.Vector3(.3,.55,0)).sub(new THREE.Vector3(.4,0,0));
-      const s2 = tube(slashA2, slashB2, .07, 0xf87171);
-      scene.add(s2); objs.push(s2);
-    }
+    const slashA = mid.clone().add(new THREE.Vector3(-.3,-.55,0));
+    const slashB = mid.clone().add(new THREE.Vector3(.3,.55,0));
+    const s = tube(slashA, slashB, .07, 0xf87171);
+    scene.add(s); objs.push(s);
   }
   objs.forEach(o=>{ o._minGen=minGen; }); return {mid,objs};
 }
@@ -1574,107 +1489,30 @@ function drawSiblingBar(parentMid, childPositions, minGen) {
 }
 
 function drawBowen(posA, posB, btype) {
-  const cols = {
-    bowen_coesao:0x4ade80, bowen_conflito:0xf87171,
-    bowen_distancia:0x6a8aac, bowen_corte:0xff4400,
-    // Genograma relacional
-    proximo:0x4ade80, estreito:0x22c55e, conflito:0xef4444,
-    distante:0xf87171, desavenca:0xdc2626, dominante:0x94a3b8,
-    generico:0x64748b, gemeo:0x38bdf8, gemeo_identico:0x0ea5e9
-  };
+  const cols = {bowen_coesao:0x4ade80, bowen_conflito:0xf87171, bowen_distancia:0x6a8aac, bowen_corte:0xff4400};
   const color = cols[btype]||0x888888;
   const mid = new THREE.Vector3().addVectors(posA,posB).multiplyScalar(.5);
   const dist = posA.distanceTo(posB); const arcH = dist*.38;
   const cp = new THREE.Vector3(mid.x, mid.y+arcH, mid.z+arcH*.6);
   const objs = [];
-
-  // ── Bowen Conflito / Corte — zigzag ──────────────────────────
-  if (btype==='bowen_conflito'||btype==='bowen_corte'||btype==='conflito') {
+  if (btype==='bowen_conflito'||btype==='bowen_corte') {
     const curve = new THREE.CatmullRomCurve3([posA.clone(),cp.clone(),posB.clone()]);
-    const pts = curve.getPoints(22);
+    const pts = curve.getPoints(20);
     for (let i=0;i<pts.length-1;i++) {
       const p0=pts[i].clone(), p1=pts[i+1].clone();
-      const off=(i%2===0?.24:-.24); p0.z+=off; p1.z+=off;
+      const off=(i%2===0?.22:-.22); p0.z+=off; p1.z+=off;
       const seg=tube(p0,p1,.065,color); scene.add(seg); objs.push(seg);
     }
-
-  // ── Distante — pontilhado ─────────────────────────────────────
-  } else if (btype==='bowen_distancia'||btype==='distante') {
+  } else if (btype==='bowen_distancia') {
     const curve = new THREE.CatmullRomCurve3([posA.clone(),cp.clone(),posB.clone()]);
-    const pts = curve.getPoints(28);
+    const pts = curve.getPoints(26);
     for (let i=0;i<pts.length-1;i+=2) {
-      const seg=tube(pts[i].clone(),pts[i+1].clone(),.045,color);
+      const seg=tube(pts[i].clone(),pts[i+1].clone(),.045,color,true);
       scene.add(seg); objs.push(seg);
     }
-
-  // ── Próximo — dupla linha verde ──────────────────────────────
-  } else if (btype==='proximo') {
-    const curve = new THREE.CatmullRomCurve3([posA.clone(),cp.clone(),posB.clone()]);
-    const pts = curve.getPoints(18);
-    [-.14,.14].forEach(off => {
-      for (let i=0;i<pts.length-1;i++) {
-        const p0=pts[i].clone(), p1=pts[i+1].clone();
-        p0.z+=off; p1.z+=off;
-        const seg=tube(p0,p1,.06,color); scene.add(seg); objs.push(seg);
-      }
-    });
-
-  // ── Estreito — tripla linha verde ────────────────────────────
-  } else if (btype==='estreito') {
-    const curve = new THREE.CatmullRomCurve3([posA.clone(),cp.clone(),posB.clone()]);
-    const pts = curve.getPoints(18);
-    [-.22,0,.22].forEach(off => {
-      for (let i=0;i<pts.length-1;i++) {
-        const p0=pts[i].clone(), p1=pts[i+1].clone();
-        p0.z+=off; p1.z+=off;
-        const seg=tube(p0,p1,.055,color); scene.add(seg); objs.push(seg);
-      }
-    });
-
-  // ── Desavença — barras T nas pontas ──────────────────────────
-  } else if (btype==='desavenca') {
-    const m=arcTube(posA,cp,posB,.055,color,14); scene.add(m); objs.push(m);
-    // Duas barras verticais perpendiculares (T nos extremos)
-    const dir = new THREE.Vector3().subVectors(posB,posA).normalize();
-    const perp = new THREE.Vector3(-dir.y,dir.x,0).normalize().multiplyScalar(.9);
-    [posA,posB].forEach(p => {
-      const t1=tube(p.clone().add(perp), p.clone().sub(perp), .09, color);
-      scene.add(t1); objs.push(t1);
-    });
-
-  // ── Dominante — linha com seta ───────────────────────────────
-  } else if (btype==='dominante') {
-    const m=arcTube(posA,cp,posB,.06,color,14); scene.add(m); objs.push(m);
-    // Cone seta em posB
-    const dir2 = new THREE.Vector3().subVectors(posB,cp).normalize();
-    const arrowGeom = new THREE.ConeGeometry(.22,.55,6);
-    const arrowMat  = new THREE.MeshPhysicalMaterial({color,metalness:.2,roughness:.5});
-    const arrow = new THREE.Mesh(arrowGeom,arrowMat);
-    arrow.position.copy(posB.clone().add(dir2.clone().multiplyScalar(.4)));
-    const up = new THREE.Vector3(0,1,0);
-    const quat = new THREE.Quaternion().setFromUnitVectors(up,dir2);
-    arrow.setRotationFromQuaternion(quat);
-    arrow.visible=false; scene.add(arrow); objs.push(arrow);
-
-  // ── Gêmeo — arco reto entre dois irmãos ──────────────────────
-  } else if (btype==='gemeo'||btype==='gemeo_identico') {
-    const cpLow = new THREE.Vector3(mid.x, mid.y-arcH*.5, mid.z+2);
-    const m=arcTube(posA,cpLow,posB,.07,color,14); scene.add(m); objs.push(m);
-    if (btype==='gemeo_identico') {
-      // Barra vertical no pico
-      const barT=tube(cpLow.clone().add(new THREE.Vector3(0,.9,0)), cpLow.clone().sub(new THREE.Vector3(0,.9,0)), .09,color);
-      scene.add(barT); objs.push(barT);
-    }
-
-  // ── Genérico — linha simples ──────────────────────────────────
-  } else if (btype==='generico') {
-    const m=tube(posA.clone(),posB.clone(),.06,color); scene.add(m); objs.push(m);
-
-  // ── Bowen Coesão — arco suave ────────────────────────────────
   } else {
     const m=arcTube(posA,cp,posB,.075,color,18); scene.add(m); objs.push(m);
   }
-
   objs.forEach(o=>{ o.visible=false; }); return objs;
 }
 
@@ -1766,22 +1604,13 @@ function populateScene() {
   initExtGenograms();
 }
 
-// Tipos que são desenhados como arco relacional (bowenLayer)
-const REL_BOND_TYPES = new Set([
-  'bowen_coesao','bowen_conflito','bowen_distancia','bowen_corte',
-  'proximo','estreito','conflito','distante','desavenca','dominante','generico',
-  'gemeo','gemeo_identico'
-]);
-
 function drawAllBonds() {
   const marriageMids = {};
   BONDS.forEach(b => {
-    if (b.type!=='casamento'&&b.type!=='separacao'&&b.type!=='divorcio') return;
+    if (b.type!=='casamento'&&b.type!=='separacao') return;
     const nA=nodeMap[b.a], nB=nodeMap[b.b]; if (!nA||!nB) return;
     const minGen=Math.min(nA.data.gen,nB.data.gen);
-    const isSep = b.type==='separacao'||b.type==='divorcio';
-    const isDiv = b.type==='divorcio';
-    const {mid,objs}=drawMarriage(nA.mesh.position.clone(),nB.mesh.position.clone(),isSep,minGen,isDiv);
+    const {mid,objs}=drawMarriage(nA.mesh.position.clone(),nB.mesh.position.clone(),b.type!=='casamento',minGen);
     marriageMids[[b.a,b.b].sort().join('|')]=mid;
     genLayer.push(...objs); buildGenByMinGen(minGen,objs);
   });
@@ -1812,7 +1641,7 @@ function drawAllBonds() {
     genLayer.push(...objs); buildGenByMinGen(minGen,objs);
   });
   BONDS.forEach(b => {
-    if (!REL_BOND_TYPES.has(b.type)) return;
+    if (!b.type.startsWith('bowen_')) return;
     const nA=nodeMap[b.a], nB=nodeMap[b.b]; if (!nA||!nB) return;
     bowenLayer.push(...drawBowen(nA.mesh.position.clone(),nB.mesh.position.clone(),b.type));
   });
@@ -2844,22 +2673,11 @@ function refreshBondSelects(){
 function updateBondUI(){
   const t=document.getElementById('bond-type').value;
   const isFil=t==='filiacao';
+  const hasSep=t==='separacao';
   document.getElementById('bond-filiacao-extra').style.display=isFil?'block':'none';
-  document.getElementById('bond-year-lbl').style.display='none';
+  document.getElementById('bond-year-lbl').style.display=(hasSep||isFil)?'none':'none';
   document.getElementById('bond-lbl-mid').textContent=
-    t==='casamento'||t==='separacao'||t==='divorcio'?'↔':t==='filiacao'?'→':'↔';
-}
-
-// Abre o bond-modal com tipo pré-selecionado e Pessoa A = ctxPersonId
-function ctxAddBond(type) {
-  hideCtxMenu();
-  refreshBondSelects();
-  const typeEl = document.getElementById('bond-type');
-  if (typeEl) typeEl.value = type;
-  const bA = document.getElementById('bond-a');
-  if (bA && ctxPersonId) bA.value = ctxPersonId;
-  updateBondUI();
-  document.getElementById('bond-modal').removeAttribute('hidden');
+    t==='casamento'||t==='separacao'?'↔':t==='filiacao'?'→':'↔';
 }
 document.addEventListener('change',e=>{
   if(e.target&&e.target.id==='bond-type') updateBondUI();
@@ -2892,19 +2710,18 @@ function confirmBond(){
         genLayer.push(arc2);
       }
     }
-  } else if(type==='casamento'||type==='separacao'||type==='divorcio'){
+  } else if(type==='casamento'||type==='separacao'){
     const bond={type,a,b}; if(year) bond.year=year;
     BONDS.push(bond);
     const pa=nodeMap[a]?.mesh?.position; const pb=nodeMap[b]?.mesh?.position;
     if(pa&&pb){
-      const isS=type==='separacao'||type==='divorcio';
-      const isD=type==='divorcio';
+      const isS=type==='separacao';
       const minG=Math.min(nodeMap[a]?.data?.gen??2,nodeMap[b]?.data?.gen??2);
-      const {objs}=drawMarriage(pa,pb,isS,minG,isD);
+      const {objs}=drawMarriage(pa,pb,isS,minG);
       genLayer.push(...objs); buildGenByMinGen(minG,objs);
     }
   } else {
-    // Relacional / Bowen
+    // Bowen
     const bond={type,a,b}; BONDS.push(bond);
     const pa=nodeMap[a]?.mesh?.position; const pb=nodeMap[b]?.mesh?.position;
     if(pa&&pb){
