@@ -349,6 +349,8 @@
     .si { width:14px; text-align:center; font-size:12px; flex-shrink:0; }
     .symb-div { border:none; border-top:1px solid var(--border); margin:5px 0; }
     .sc { display:inline-block; border-radius:2px; flex-shrink:0; }
+    .sv { width:36px; height:16px; flex-shrink:0; overflow:visible; }
+    .symb-lbl { font-size:9px; color:var(--dim2); text-transform:uppercase; letter-spacing:.07em; font-weight:600; padding:4px 0 2px; }
 
     /* ── MODALS ──────────────────────────────── */
     .modal-bg { position:fixed; inset:0; background:rgba(6,12,24,.78);
@@ -664,25 +666,148 @@
         Simbologia <span class="blc-symb-arr">▼</span>
       </div>
       <div class="blc-symb-body">
-        <div class="symb-row"><span class="si" style="color:#4a9eff">■</span> Homem (cubo azul)</div>
-        <div class="symb-row"><span class="si" style="color:#e11d7a">●</span> Mulher (esfera rosa)</div>
-        <div class="symb-row"><span class="si" style="color:#c084fc">◆</span> Trans / NB (octaedro)</div>
-        <div class="symb-row"><span class="si" style="color:#06d6a0">⊙</span> Pessoa foco (anel)</div>
-        <div class="symb-row"><span class="si" style="color:#6a8aac">⊠</span> Falecido/a (wireframe)</div>
+
+        <!-- NÓS -->
+        <div class="symb-lbl">Nós</div>
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" fill="#4a9eff" rx="1"/></svg>
+          Homem
+        </div>
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="#e11d7a"/></svg>
+          Mulher
+        </div>
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="#c084fc"/></svg>
+          Trans / Não-binário
+        </div>
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="none" stroke="#06d6a0" stroke-width="2"/><circle cx="8" cy="8" r="1.8" fill="#06d6a0"/></svg>
+          Pessoa foco
+        </div>
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" fill="none" stroke="#6a8aac" stroke-width="1.4" rx="1" stroke-dasharray="2,1.2"/></svg>
+          Falecido/a
+        </div>
+
         <hr class="symb-div">
-        <div class="symb-row"><span class="si">═</span> Casamento</div>
-        <div class="symb-row"><span class="si" style="color:#f87171">╌</span> Separação</div>
+
+        <!-- VÍNCULOS GENOGRAMA -->
+        <div class="symb-lbl">Genograma</div>
+
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 36 16">
+            <line x1="2" y1="6" x2="34" y2="6" stroke="#aaccee" stroke-width="1.8"/>
+            <line x1="2" y1="10" x2="34" y2="10" stroke="#aaccee" stroke-width="1.8"/>
+          </svg>
+          Casamento / União
+        </div>
+
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 36 16">
+            <line x1="2" y1="6" x2="34" y2="6" stroke="#7aaabb" stroke-width="1.8"/>
+            <line x1="2" y1="10" x2="34" y2="10" stroke="#7aaabb" stroke-width="1.8"/>
+            <line x1="14" y1="1" x2="22" y2="15" stroke="#f87171" stroke-width="2.4"/>
+          </svg>
+          Separação / Divórcio
+        </div>
+
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 36 18">
+            <line x1="18" y1="1" x2="18" y2="7" stroke="#5588aa" stroke-width="1.5"/>
+            <line x1="8"  y1="7" x2="28" y2="7" stroke="#5588aa" stroke-width="1.5"/>
+            <line x1="10" y1="7" x2="10" y2="17" stroke="#5588aa" stroke-width="1.5"/>
+            <line x1="18" y1="7" x2="18" y2="17" stroke="#5588aa" stroke-width="1.5"/>
+            <line x1="26" y1="7" x2="26" y2="17" stroke="#5588aa" stroke-width="1.5"/>
+          </svg>
+          Filiação
+        </div>
+
         <hr class="symb-div">
-        <div class="symb-row"><span class="sc" style="width:14px;height:4px;background:#4ade80"></span> Coesão Bowen</div>
-        <div class="symb-row"><span class="sc" style="width:14px;height:4px;background:#f87171"></span> Conflito Bowen</div>
-        <div class="symb-row"><span class="sc" style="width:14px;height:2px;background:#6a8aac;opacity:.6"></span> Distância Bowen</div>
+
+        <!-- DINÂMICAS BOWEN -->
+        <div class="symb-lbl">Bowen</div>
+
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 36 16">
+            <path d="M2,14 Q18,-2 34,14" fill="none" stroke="#4ade80" stroke-width="2.8"/>
+          </svg>
+          Coesão
+        </div>
+
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 36 16">
+            <polyline points="2,13 7,3 12,13 17,3 22,13 27,3 32,13" fill="none" stroke="#f87171" stroke-width="1.8" stroke-linejoin="round"/>
+          </svg>
+          Conflito
+        </div>
+
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 36 16">
+            <path d="M2,13 Q18,-1 34,13" fill="none" stroke="#6a8aac" stroke-width="1.5" stroke-dasharray="3.5,2.5" opacity=".75"/>
+          </svg>
+          Distância emocional
+        </div>
+
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 36 16">
+            <polyline points="2,13 7,3 12,13 17,3 22,13 27,3 32,13" fill="none" stroke="#ff4400" stroke-width="1.8" stroke-linejoin="round"/>
+          </svg>
+          Corte emocional
+        </div>
+
         <hr class="symb-div">
-        <div class="symb-row"><span class="sc" style="width:14px;height:3px;background:#22c55e;border-radius:2px"></span> Saúde</div>
-        <div class="symb-row"><span class="sc" style="width:14px;height:3px;background:#3b82f6;border-radius:2px"></span> Assistência social</div>
-        <div class="symb-row"><span class="sc" style="width:14px;height:3px;background:#eab308;border-radius:2px"></span> Educação</div>
-        <div class="symb-row"><span class="sc" style="width:14px;height:3px;background:#a855f7;border-radius:2px"></span> Comunidade/Religião</div>
-        <div class="symb-row"><span class="sc" style="width:14px;height:3px;background:#f97316;border-radius:2px"></span> Trabalho</div>
-        <div class="symb-row"><span class="sc" style="width:14px;height:3px;background:#ec4899;border-radius:2px"></span> Rede social</div>
+
+        <!-- ECOMAPA — FORÇA -->
+        <div class="symb-lbl">Ecomapa — força</div>
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 36 16">
+            <path d="M2,13 Q18,1 34,13" fill="none" stroke="#9ca3af" stroke-width="4"/>
+          </svg>
+          Forte
+        </div>
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 36 16">
+            <path d="M2,13 Q18,1 34,13" fill="none" stroke="#9ca3af" stroke-width="2"/>
+          </svg>
+          Médio
+        </div>
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 36 16">
+            <path d="M2,13 Q18,1 34,13" fill="none" stroke="#9ca3af" stroke-width="0.8"/>
+          </svg>
+          Fraco
+        </div>
+
+        <hr class="symb-div">
+
+        <!-- ECOMAPA — SERVIÇO -->
+        <div class="symb-lbl">Ecomapa — serviço</div>
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 36 16"><path d="M2,13 Q18,1 34,13" fill="none" stroke="#22c55e" stroke-width="2.5"/></svg>
+          Saúde
+        </div>
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 36 16"><path d="M2,13 Q18,1 34,13" fill="none" stroke="#3b82f6" stroke-width="2.5"/></svg>
+          Assistência social
+        </div>
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 36 16"><path d="M2,13 Q18,1 34,13" fill="none" stroke="#eab308" stroke-width="2.5"/></svg>
+          Educação
+        </div>
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 36 16"><path d="M2,13 Q18,1 34,13" fill="none" stroke="#a855f7" stroke-width="2.5"/></svg>
+          Religião / Comunidade
+        </div>
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 36 16"><path d="M2,13 Q18,1 34,13" fill="none" stroke="#f97316" stroke-width="2.5"/></svg>
+          Trabalho
+        </div>
+        <div class="symb-row">
+          <svg class="sv" viewBox="0 0 36 16"><path d="M2,13 Q18,1 34,13" fill="none" stroke="#ec4899" stroke-width="2.5"/></svg>
+          Rede social
+        </div>
+
       </div>
     </div>
   </div>
