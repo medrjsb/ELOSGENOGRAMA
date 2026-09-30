@@ -216,6 +216,18 @@
       color:var(--blue); padding:5px 11px; border-radius:6px;
       font-size:12px; cursor:pointer; transition:all .2s; white-space:nowrap; }
     .auth-btn:hover { background:rgba(74,158,255,.2); }
+    /* Topbar compacta: sem isso os botões Salvar/Entrar saíam da tela em notebooks (≤1500px) */
+    .topbar { overflow-x:auto; scrollbar-width:none; }
+    .topbar::-webkit-scrollbar { display:none; }
+    .topbar > * { flex-shrink:0; }
+    @media (max-width:1560px) {
+      .topbar { gap:3px; padding:0 8px; }
+      .layer-btn, .build-btn, .auth-btn { padding:5px 7px; }
+      .voice-btn, .add-btn { padding:5px 8px; }
+      .depth-wrap > span { display:none; }
+      .tb-search { width:84px; }
+      .tb-sep { margin:0 1px; }
+    }
 
     /* ── CANVAS ──────────────────────────────── */
     #cv { position:fixed; top:52px; left:0; right:0; bottom:0; }
@@ -392,6 +404,26 @@
       transition:all .2s; font-family:'Inter',sans-serif; margin-bottom:-1px; }
     .auth-tab.active { color:var(--teal); border-bottom-color:var(--teal); }
     .auth-status { margin-top:10px; font-size:11px; color:var(--dim); min-height:16px; }
+    .auth-status.err { color:var(--red); }
+    .auth-status.ok  { color:var(--teal); }
+    .auth-link { background:none; border:none; color:var(--dim); font-size:11px; cursor:pointer;
+      padding:0; margin-top:4px; text-decoration:underline; font-family:'Inter',sans-serif; }
+    .auth-link:hover { color:var(--text); }
+    .modal-actions button:disabled { opacity:.55; cursor:wait; }
+    .acc-email { font-size:12px; color:var(--dim); margin:-10px 0 16px; word-break:break-all; }
+    .gl-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); }
+    .gl-row:last-child { border-bottom:none; }
+    .gl-main { flex:1; min-width:0; }
+    .gl-title { font-size:13px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .gl-meta { font-size:10.5px; color:var(--dim2); margin-top:2px; }
+    .gl-row.current .gl-title { color:var(--teal); }
+    .gl-btn { background:transparent; border:1px solid var(--border); color:var(--dim); padding:4px 10px;
+      border-radius:5px; font-size:11.5px; cursor:pointer; font-family:'Inter',sans-serif; }
+    .gl-btn:hover { border-color:var(--blue); color:var(--text); }
+    .gl-btn.danger:hover { border-color:var(--red); color:var(--red); }
+    .gl-list { max-height:260px; overflow-y:auto; margin-top:6px; }
+    .gl-sec { font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--dim2); margin:16px 0 4px; }
+    .gl-file { display:flex; gap:8px; margin-top:6px; }
 
     /* ── TIMELINE ────────────────────────────── */
     #tl { position:fixed; bottom:0; left:0; right:0; height:74px;
@@ -532,6 +564,7 @@
   <button class="add-btn" onclick="openServiceModal()" style="background:rgba(34,197,94,.10);border-color:#22c55e;color:#22c55e">+ Serviço</button>
   <button class="add-btn" onclick="openBondModal()" style="background:rgba(192,132,252,.14);border-color:var(--purp);color:var(--purp)">⟷ Vínculo</button>
   <input type="search" class="tb-search" id="srch" placeholder="Buscar…" oninput="doSearch(this.value)">
+  <button class="auth-btn" id="btn-save" onclick="openGenoModal()" title="Salvar e abrir genogramas">💾 Salvar</button>
   <button class="auth-btn" id="btn-auth" onclick="showAuth()">Entrar</button>
 </div>
 
@@ -801,31 +834,67 @@
 </div>
 
 <!-- AUTH MODAL -->
-<div class="modal-bg" id="auth-modal" hidden>
-  <div class="modal-box">
-    <h3>Entrar no ELOS</h3>
-    <div class="auth-tabs">
-      <button class="auth-tab active" onclick="authTab('login')">Entrar</button>
-      <button class="auth-tab" onclick="authTab('reg')">Criar conta</button>
+<div class="modal-bg" id="auth-modal" hidden onclick="if(event.target===this)closeAuth()">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <h3 id="auth-title">Entrar no ELOS</h3>
+    <div id="auth-forms">
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="auth-tab active" data-tab="login" onclick="authTab('login')">Entrar</button>
+        <button type="button" class="auth-tab" data-tab="reg" onclick="authTab('reg')">Criar conta</button>
+      </div>
+      <form id="auth-login" onsubmit="event.preventDefault();doLogin()" novalidate>
+        <label>E-mail <input type="email" id="au-email" name="email" autocomplete="username" inputmode="email" placeholder="seu@email.com" required></label>
+        <label>Senha  <input type="password" id="au-pass" name="password" autocomplete="current-password" placeholder="••••••••" required></label>
+        <button type="button" class="auth-link" onclick="doResetPassword()">Esqueci minha senha</button>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" onclick="closeAuth()">Cancelar</button>
+          <button type="submit" class="btn-confirm" id="au-login-btn">Entrar</button>
+        </div>
+      </form>
+      <form id="auth-reg" style="display:none" onsubmit="event.preventDefault();doReg()" novalidate>
+        <label>Nome  <input id="au-rname" name="name" autocomplete="name" placeholder="Seu nome" required></label>
+        <label>E-mail <input type="email" id="au-remail" name="email" autocomplete="username" inputmode="email" placeholder="seu@email.com" required></label>
+        <label>Senha  <input type="password" id="au-rpass" name="new-password" autocomplete="new-password" placeholder="mínimo 8 caracteres" minlength="8" required></label>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" onclick="closeAuth()">Cancelar</button>
+          <button type="submit" class="btn-confirm" id="au-reg-btn">Criar conta</button>
+        </div>
+      </form>
     </div>
-    <div id="auth-login">
-      <label>E-mail <input type="email" id="au-email" placeholder="seu@email.com"></label>
-      <label>Senha  <input type="password" id="au-pass" placeholder="••••••••"></label>
-      <div class="modal-actions">
-        <button class="btn-confirm" onclick="doLogin()">Entrar</button>
-        <button class="btn-cancel" onclick="closeAuth()">Cancelar</button>
+    <div id="auth-account" style="display:none">
+      <p class="acc-email" id="acc-email"></p>
+      <div class="modal-actions" style="margin-top:0">
+        <button type="button" class="btn-cancel" onclick="doLogout()">Sair</button>
+        <button type="button" class="btn-confirm" onclick="closeAuth();openGenoModal()">Meus genogramas</button>
       </div>
     </div>
-    <div id="auth-reg" style="display:none">
-      <label>Nome  <input id="au-rname" placeholder="Seu nome"></label>
-      <label>E-mail <input type="email" id="au-remail" placeholder="seu@email.com"></label>
-      <label>Senha  <input type="password" id="au-rpass" placeholder="••••••••"></label>
-      <div class="modal-actions">
-        <button class="btn-confirm" onclick="doReg()">Criar conta</button>
-        <button class="btn-cancel" onclick="closeAuth()">Cancelar</button>
+    <div class="auth-status" id="auth-st" role="status" aria-live="polite"></div>
+  </div>
+</div>
+
+<!-- GENOGRAMAS SALVOS -->
+<div class="modal-bg" id="geno-modal" hidden onclick="if(event.target===this)closeGenoModal()">
+  <div class="modal-box" style="width:460px" role="dialog" aria-modal="true" aria-labelledby="geno-title">
+    <h3 id="geno-title">Meus genogramas</h3>
+    <form onsubmit="event.preventDefault();saveGenogram()">
+      <label>Nome deste genograma <input id="geno-name" maxlength="200" placeholder="Ex.: Família Andrade"></label>
+      <div class="modal-actions" style="margin-top:4px">
+        <button type="button" class="btn-cancel" id="geno-saveas" onclick="saveGenogram(true)" style="display:none">Salvar como novo</button>
+        <button type="submit" class="btn-confirm" id="geno-save-btn">Salvar na nuvem</button>
       </div>
+    </form>
+    <div class="gl-sec">Salvos na sua conta</div>
+    <div class="gl-list" id="geno-list"></div>
+    <div class="gl-sec">Arquivo local</div>
+    <div class="gl-file">
+      <button type="button" class="gl-btn" onclick="exportGenogramFile()">Baixar .json</button>
+      <button type="button" class="gl-btn" onclick="document.getElementById('geno-file').click()">Abrir .json</button>
+      <input type="file" id="geno-file" accept="application/json,.json" hidden onchange="importGenogramFile(this)">
     </div>
-    <div class="auth-status" id="auth-st"></div>
+    <div class="auth-status" id="geno-st" role="status" aria-live="polite"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" onclick="closeGenoModal()">Fechar</button>
+    </div>
   </div>
 </div>
 
@@ -2937,6 +3006,7 @@ function goHome(){
 function startNewGenogram(){
   // confirm() always returns false in local/artifact environments — skip it
   document.getElementById('welcome').classList.add('gone');
+  currentGenogram=null;
   // Clear all scene objects
   clearSceneObjects();
   // Reset data
@@ -2983,43 +3053,353 @@ function clearSceneObjects(){
 // ════════════════════════════════════════════════════
 // AUTH
 // ════════════════════════════════════════════════════
-function showAuth() { document.getElementById('auth-modal').removeAttribute('hidden'); }
+let authUser = null;
+
+function showAuth(msg) {
+  const logged=!!authUser;
+  document.getElementById('auth-forms').style.display=logged?'none':'';
+  document.getElementById('auth-account').style.display=logged?'':'none';
+  document.getElementById('auth-title').textContent=logged?'Minha conta':'Entrar no ELOS';
+  if (logged) document.getElementById('acc-email').textContent=authUser.email||'';
+  setAuthSt(msg||'');
+  document.getElementById('auth-modal').removeAttribute('hidden');
+  if (!logged) setTimeout(()=>document.getElementById('au-email').focus(),30);
+}
 function closeAuth(){ document.getElementById('auth-modal').setAttribute('hidden',''); }
 function authTab(tab) {
-  document.querySelectorAll('.auth-tab').forEach((t,i)=>{ t.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='reg')); });
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
   document.getElementById('auth-login').style.display=tab==='login'?'block':'none';
   document.getElementById('auth-reg').style.display=tab==='reg'?'block':'none';
+  setAuthSt('');
 }
-function setAuthSt(msg){document.getElementById('auth-st').textContent=msg;}
-async function doLogin() {
-  if (!supa){setAuthSt('Supabase não conectado. Use o modo demonstração.');return;}
-  const email=document.getElementById('au-email').value;
-  const pass=document.getElementById('au-pass').value;
-  setAuthSt('Entrando…');
-  try {
-    const {error}=await supa.auth.signInWithPassword({email,password:pass});
-    if (error){setAuthSt('Erro: '+error.message);return;}
-    document.getElementById('btn-auth').textContent='Minha conta'; closeAuth();
-  } catch(e){
-    setAuthSt('Sem conexão com o servidor. '+_authFallbackMsg());
+function setAuthSt(msg, kind){
+  const el=document.getElementById('auth-st');
+  el.textContent=msg; el.className='auth-status'+(kind?' '+kind:'');
+}
+function _busy(btnId, on, label){
+  const b=document.getElementById(btnId); if(!b) return;
+  if (on) { b.dataset.label=b.textContent; b.textContent=label; b.disabled=true; }
+  else { b.textContent=b.dataset.label||b.textContent; b.disabled=false; }
+}
+const _EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Mensagens do Supabase Auth em português
+function _authErrPt(err){
+  const m=((err&&err.message)||'').toLowerCase();
+  if (m.includes('invalid login credentials')) return 'E-mail ou senha incorretos.';
+  if (m.includes('email not confirmed')) return 'Confirme seu e-mail pelo link enviado antes de entrar.';
+  if (m.includes('already registered')||m.includes('already been registered')) return 'Este e-mail já tem conta. Use a aba Entrar.';
+  if (m.includes('password should be')||m.includes('weak')) return 'Senha fraca: use pelo menos 8 caracteres, com letras e números.';
+  if (m.includes('rate limit')||m.includes('too many')) return 'Muitas tentativas. Aguarde alguns minutos e tente de novo.';
+  if (m.includes('signups not allowed')||m.includes('signup is disabled')) return 'Cadastro desativado. Peça um convite ao administrador.';
+  if (m.includes('failed to fetch')||m.includes('network')) return 'Sem conexão com o servidor. '+_authFallbackMsg();
+  return 'Erro: '+((err&&err.message)||'desconhecido');
+}
+
+function _onAuthChange(user){
+  authUser=user||null;
+  const btn=document.getElementById('btn-auth');
+  if (authUser) {
+    const nome=(authUser.user_metadata&&authUser.user_metadata.full_name)||authUser.email||'Minha conta';
+    btn.textContent='● '+nome.split(/[ @]/)[0];
+    btn.title=authUser.email||'';
+  } else {
+    btn.textContent='Entrar'; btn.title='';
   }
+}
+
+async function initAuth(){
+  if (!supa) return;
+  try {
+    const {data}=await supa.auth.getSession();
+    _onAuthChange(data&&data.session&&data.session.user);
+    supa.auth.onAuthStateChange((evt, session)=>{
+      _onAuthChange(session&&session.user);
+      if (evt==='PASSWORD_RECOVERY') _askNewPassword();
+    });
+  } catch(e) { /* offline: segue no modo local */ }
+}
+
+async function doLogin() {
+  if (!supa){setAuthSt('Supabase não conectado. Use o modo demonstração.','err');return;}
+  const email=document.getElementById('au-email').value.trim();
+  const pass=document.getElementById('au-pass').value;
+  if (!_EMAIL_RE.test(email)) { setAuthSt('Informe um e-mail válido.','err'); return; }
+  if (!pass) { setAuthSt('Informe a senha.','err'); return; }
+  setAuthSt('Entrando…'); _busy('au-login-btn',true,'Entrando…');
+  try {
+    const {data,error}=await supa.auth.signInWithPassword({email,password:pass});
+    if (error){ setAuthSt(_authErrPt(error),'err'); return; }
+    _onAuthChange(data.user);
+    document.getElementById('au-pass').value='';
+    closeAuth();
+    if (_afterLogin) { const fn=_afterLogin; _afterLogin=null; fn(); }
+  } catch(e){
+    setAuthSt('Sem conexão com o servidor. '+_authFallbackMsg(),'err');
+  } finally { _busy('au-login-btn',false); }
 }
 async function doReg() {
-  if (!supa){setAuthSt('Supabase não conectado. Use o modo demonstração.');return;}
-  const email=document.getElementById('au-remail').value;
+  if (!supa){setAuthSt('Supabase não conectado. Use o modo demonstração.','err');return;}
+  const name=document.getElementById('au-rname').value.trim();
+  const email=document.getElementById('au-remail').value.trim();
   const pass=document.getElementById('au-rpass').value;
-  setAuthSt('Criando conta…');
+  if (!name) { setAuthSt('Informe seu nome.','err'); return; }
+  if (!_EMAIL_RE.test(email)) { setAuthSt('Informe um e-mail válido.','err'); return; }
+  if (pass.length<8) { setAuthSt('A senha precisa ter pelo menos 8 caracteres.','err'); return; }
+  setAuthSt('Criando conta…'); _busy('au-reg-btn',true,'Criando…');
   try {
-    const {error}=await supa.auth.signUp({email,password:pass});
-    if (error){setAuthSt('Erro: '+error.message);return;}
-    setAuthSt('✓ Conta criada! Verifique seu e-mail para ativar.');
+    const {data,error}=await supa.auth.signUp({email,password:pass,options:{
+      data:{full_name:name}, emailRedirectTo:location.origin+location.pathname
+    }});
+    if (error){ setAuthSt(_authErrPt(error),'err'); return; }
+    document.getElementById('au-rpass').value='';
+    if (data.session) { _onAuthChange(data.user); closeAuth(); return; }
+    setAuthSt('✓ Conta criada! Abra o link enviado para '+email+' para ativar.','ok');
   } catch(e){
-    setAuthSt('Sem conexão com o servidor. '+_authFallbackMsg());
-  }
+    setAuthSt('Sem conexão com o servidor. '+_authFallbackMsg(),'err');
+  } finally { _busy('au-reg-btn',false); }
+}
+async function doResetPassword(){
+  if (!supa){setAuthSt('Supabase não conectado.','err');return;}
+  const email=document.getElementById('au-email').value.trim();
+  if (!_EMAIL_RE.test(email)) { setAuthSt('Digite seu e-mail acima e clique de novo em "Esqueci minha senha".','err'); return; }
+  setAuthSt('Enviando…');
+  try {
+    const {error}=await supa.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+    if (error){ setAuthSt(_authErrPt(error),'err'); return; }
+    setAuthSt('✓ Se houver conta para '+email+', enviamos um link para redefinir a senha.','ok');
+  } catch(e){ setAuthSt('Sem conexão com o servidor.','err'); }
+}
+// Chamado quando o usuário volta pelo link de redefinição de senha
+function _askNewPassword(){
+  showAuth();
+  document.getElementById('auth-forms').style.display='';
+  document.getElementById('auth-account').style.display='none';
+  authTab('reg');
+  document.getElementById('auth-title').textContent='Definir nova senha';
+  document.getElementById('au-rname').closest('label').style.display='none';
+  document.getElementById('au-remail').closest('label').style.display='none';
+  document.querySelector('.auth-tabs').style.display='none';
+  const btn=document.getElementById('au-reg-btn'); btn.textContent='Salvar nova senha';
+  document.getElementById('auth-reg').onsubmit=async ev=>{
+    ev.preventDefault();
+    const pass=document.getElementById('au-rpass').value;
+    if (pass.length<8) { setAuthSt('A senha precisa ter pelo menos 8 caracteres.','err'); return; }
+    const {error}=await supa.auth.updateUser({password:pass});
+    if (error){ setAuthSt(_authErrPt(error),'err'); return; }
+    setAuthSt('✓ Senha atualizada.','ok');
+    setTimeout(()=>location.replace(location.origin+location.pathname),1200);
+  };
+}
+async function doLogout(){
+  try { if (supa) await supa.auth.signOut(); } catch(e) {}
+  _onAuthChange(null); currentGenogram=null; closeAuth();
 }
 function _authFallbackMsg(){
   return 'O ELOS precisa ser servido via HTTPS para autenticar. '+
-    'Em modo local, use o botão "Explorar demo" ou "Construir meu genograma" sem conta.';
+    'Em modo local, use "Demo: Sofia" ou "Construir meu genograma" sem conta, e salve em arquivo .json.';
+}
+
+document.addEventListener('keydown',ev=>{
+  if (ev.key!=='Escape') return;
+  if (!document.getElementById('auth-modal').hasAttribute('hidden')) closeAuth();
+  if (!document.getElementById('geno-modal').hasAttribute('hidden')) closeGenoModal();
+});
+
+// ════════════════════════════════════════════════════
+// SALVAR / CARREGAR GENOGRAMA
+// ════════════════════════════════════════════════════
+// O snapshot guarda só dados (nunca objetos Three.js); a cena é reconstruída
+// a partir deles. RPCs em supabase/migrations/*_elos_genogram_rpcs.sql.
+const SNAPSHOT_VERSION = 1;
+let currentGenogram = null;   // {id, title, version} do genograma aberto da nuvem
+let _afterLogin = null;
+
+function _clone(o){ return JSON.parse(JSON.stringify(o)); }
+
+function buildSnapshot(){
+  return {
+    v: SNAPSHOT_VERSION,
+    app: 'ELOS v19',
+    saved_at: new Date().toISOString(),
+    nextId,
+    people: _clone(PEOPLE),
+    bonds: _clone(BONDS),
+    eco_nodes: _clone(ECO_NODES),
+    eco_bonds: _clone(ECO_BONDS),
+    timeline: _clone(TL_EVENTS),
+    bowen: _clone(BOWEN_DATA),
+    alerts: _clone(ALERT_DATA),
+    evolucao: _clone(EVOLUCAO),
+    extended: _clone(EXTENDED_GENOGRAMS),
+  };
+}
+
+function _validSnapshot(s){
+  return s && typeof s==='object' && s.v===SNAPSHOT_VERSION &&
+    Array.isArray(s.people) && Array.isArray(s.bonds) &&
+    s.people.every(p=>p && typeof p.id==='string' && typeof p.name==='string');
+}
+
+function _replaceArr(arr, src){ arr.length=0; (src||[]).forEach(x=>arr.push(x)); }
+function _replaceObj(obj, src){ Object.keys(obj).forEach(k=>delete obj[k]); Object.assign(obj, src||{}); }
+
+function loadSnapshot(snap){
+  if (!_validSnapshot(snap)) throw new Error('Arquivo não é um genograma ELOS válido.');
+  closeInfo(); hideCtxMenu();
+  clearSceneObjects();
+  Object.keys(nodeMap).forEach(k=>delete nodeMap[k]);
+  genLayer.length=0; ecoLayer.length=0; bowenLayer.length=0; ecoMeshes.length=0;
+  genByMinGen={};
+  expandedGenograms.clear();
+  Object.keys(extNodeMap).forEach(k=>delete extNodeMap[k]);
+  Object.keys(extBondCache).forEach(k=>delete extBondCache[k]);
+  _replaceObj(EXTENDED_GENOGRAMS, snap.extended);
+  updateExtBadge();
+
+  // Coordenadas ausentes (arquivos editados à mão) caem na origem em vez de quebrar a cena
+  snap.people.forEach(p=>{ ['x','y','z'].forEach(k=>{ p[k]=Number(p[k]); if(!isFinite(p[k])) p[k]=0; }); });
+  _replaceArr(PEOPLE, snap.people);
+  _replaceArr(BONDS, snap.bonds);
+  _replaceArr(ECO_NODES, snap.eco_nodes);
+  _replaceArr(ECO_BONDS, snap.eco_bonds);
+  _replaceArr(TL_EVENTS, snap.timeline);
+  _replaceObj(BOWEN_DATA, snap.bowen);
+  _replaceObj(ALERT_DATA, snap.alerts);
+  _replaceObj(EVOLUCAO, snap.evolucao);
+  const maxNum=Math.max(199, ...PEOPLE.map(p=>parseInt(String(p.id).replace(/\D/g,''))||0));
+  nextId=Math.max(parseInt(snap.nextId)||0, maxNum+1);
+  currentInfoId=null;
+
+  populateScene();
+  refreshBondSelects();
+  document.getElementById('new-gen-banner').classList.remove('on');
+  document.getElementById('welcome').classList.add('gone');
+  const hint=document.getElementById('hint'); if(hint) hint.classList.add('gone');
+}
+
+function setGenoSt(msg, kind){
+  const el=document.getElementById('geno-st');
+  el.textContent=msg; el.className='auth-status'+(kind?' '+kind:'');
+}
+
+function _rpcErrPt(error){
+  const m=((error&&error.message)||'').toLowerCase();
+  if (m.includes('jwt')||m.includes('autentica')) return 'Sua sessão expirou. Entre de novo.';
+  if (m.includes('não encontrado')) return 'Genograma não encontrado (pode ter sido arquivado).';
+  if (m.includes('excede')) return 'Genograma grande demais para salvar (limite de 5 MB).';
+  if (m.includes('failed to fetch')) return 'Sem conexão. Use "Baixar .json" para não perder o trabalho.';
+  return 'Erro: '+((error&&error.message)||'desconhecido');
+}
+
+function openGenoModal(){
+  const hasCloud=!!(supa&&authUser);
+  document.getElementById('geno-name').value=currentGenogram?currentGenogram.title:_suggestTitle();
+  document.getElementById('geno-saveas').style.display=currentGenogram?'':'none';
+  document.getElementById('geno-save-btn').textContent=currentGenogram?'Salvar alterações':'Salvar na nuvem';
+  setGenoSt('');
+  document.getElementById('geno-modal').removeAttribute('hidden');
+  if (hasCloud) refreshGenoList();
+  else document.getElementById('geno-list').innerHTML=
+    '<div class="gl-meta" style="padding:8px 0">Entre com sua conta para salvar na nuvem e abrir de qualquer dispositivo. <button type="button" class="auth-link" onclick="closeGenoModal();_afterLogin=openGenoModal;showAuth()">Entrar</button></div>';
+}
+function closeGenoModal(){ document.getElementById('geno-modal').setAttribute('hidden',''); }
+
+function _suggestTitle(){
+  const f=PEOPLE.find(p=>p.focus)||PEOPLE[0];
+  if (!f) return '';
+  return 'Família de '+f.name+(f.surname?' '+f.surname:'');
+}
+
+function _esc(t){ const d=document.createElement('div'); d.textContent=t==null?'':String(t); return d.innerHTML; }
+
+async function refreshGenoList(){
+  const box=document.getElementById('geno-list');
+  box.innerHTML='<div class="gl-meta" style="padding:8px 0">Carregando…</div>';
+  const {data,error}=await supa.rpc('elos_list_genograms');
+  if (error) { box.innerHTML=''; setGenoSt(_rpcErrPt(error),'err'); return; }
+  if (!data||!data.length) { box.innerHTML='<div class="gl-meta" style="padding:8px 0">Nenhum genograma salvo ainda.</div>'; return; }
+  box.innerHTML=data.map(g=>{
+    const cur=currentGenogram&&currentGenogram.id===g.id;
+    const quando=new Date(g.updated_at).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
+    return `<div class="gl-row${cur?' current':''}">
+      <div class="gl-main"><div class="gl-title">${_esc(g.title)}${cur?' · aberto':''}</div>
+      <div class="gl-meta">${g.pessoas} pessoa${g.pessoas===1?'':'s'} · v${g.version} · ${quando}</div></div>
+      <button type="button" class="gl-btn" data-open="${g.id}">Abrir</button>
+      <button type="button" class="gl-btn danger" data-archive="${g.id}" title="Arquivar">Arquivar</button>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openCloudGenogram(b.dataset.open));
+  box.querySelectorAll('[data-archive]').forEach(b=>b.onclick=()=>archiveCloudGenogram(b.dataset.archive,b));
+}
+
+async function saveGenogram(asNew){
+  if (!supa||!authUser) { _afterLogin=openGenoModal; closeGenoModal(); showAuth('Entre para salvar na nuvem, ou use "Baixar .json".'); return; }
+  if (!PEOPLE.length) { setGenoSt('Adicione pelo menos uma pessoa antes de salvar.','err'); return; }
+  const title=document.getElementById('geno-name').value.trim()||_suggestTitle()||'Família sem título';
+  const id=(!asNew&&currentGenogram)?currentGenogram.id:null;
+  setGenoSt('Salvando…'); _busy('geno-save-btn',true,'Salvando…');
+  try {
+    const {data,error}=await supa.rpc('elos_save_genogram',{p_id:id,p_title:title,p_snapshot:buildSnapshot()});
+    if (error) { setGenoSt(_rpcErrPt(error),'err'); return; }
+    const row=Array.isArray(data)?data[0]:data;
+    currentGenogram={id:row.id,title:row.title,version:row.version};
+    document.getElementById('geno-saveas').style.display='';
+    document.getElementById('geno-save-btn').dataset.label='Salvar alterações';
+    setGenoSt('✓ Salvo ("'+row.title+'", versão '+row.version+').','ok');
+    refreshGenoList();
+  } catch(e) { setGenoSt(_rpcErrPt(e),'err'); }
+  finally { _busy('geno-save-btn',false); }
+}
+
+async function openCloudGenogram(id){
+  setGenoSt('Abrindo…');
+  const {data,error}=await supa.rpc('elos_get_genogram',{p_id:id});
+  if (error) { setGenoSt(_rpcErrPt(error),'err'); return; }
+  const row=Array.isArray(data)?data[0]:data;
+  if (!row) { setGenoSt('Genograma não encontrado.','err'); return; }
+  try { loadSnapshot(row.snapshot); }
+  catch(e) { setGenoSt(e.message,'err'); return; }
+  currentGenogram={id:row.id,title:row.title,version:row.version};
+  closeGenoModal();
+}
+
+async function archiveCloudGenogram(id, btn){
+  // confirm() não funciona em artifacts: primeiro clique arma, segundo confirma
+  if (btn.dataset.armed!=='1') { btn.dataset.armed='1'; btn.textContent='Confirmar?'; setTimeout(()=>{btn.dataset.armed='';btn.textContent='Arquivar';},4000); return; }
+  const {error}=await supa.rpc('elos_archive_genogram',{p_id:id});
+  if (error) { setGenoSt(_rpcErrPt(error),'err'); return; }
+  if (currentGenogram&&currentGenogram.id===id) currentGenogram=null;
+  setGenoSt('Genograma arquivado.','ok');
+  refreshGenoList();
+}
+
+function exportGenogramFile(){
+  if (!PEOPLE.length) { setGenoSt('Nada para exportar: o genograma está vazio.','err'); return; }
+  const title=document.getElementById('geno-name').value.trim()||_suggestTitle()||'genograma';
+  const blob=new Blob([JSON.stringify({title,...buildSnapshot()},null,1)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='elos-'+title.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  setGenoSt('✓ Arquivo baixado. Ele contém dados sensíveis: guarde com segurança.','ok');
+}
+
+function importGenogramFile(input){
+  const f=input.files&&input.files[0]; input.value='';
+  if (!f) return;
+  if (f.size>5*1024*1024) { setGenoSt('Arquivo grande demais (limite de 5 MB).','err'); return; }
+  const r=new FileReader();
+  r.onload=()=>{
+    try {
+      const snap=JSON.parse(r.result);
+      loadSnapshot(snap);
+      currentGenogram=null;
+      closeGenoModal();
+    } catch(e) { setGenoSt(e instanceof SyntaxError?'O arquivo não é um JSON válido.':e.message,'err'); }
+  };
+  r.readAsText(f);
 }
 
 // ════════════════════════════════════════════════════
@@ -3956,7 +4336,7 @@ function onResize() {
 // MAIN
 // ════════════════════════════════════════════════════
 function main() {
-  initSupa(); initScene(); populateScene(); animate(); _initCtxMenu();
+  initSupa(); initScene(); populateScene(); animate(); _initCtxMenu(); initAuth();
   setTimeout(()=>{
     document.getElementById('loading').classList.add('out');
     setTimeout(()=>{
